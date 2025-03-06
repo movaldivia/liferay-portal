@@ -37,7 +37,7 @@ import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestHelper;
 import com.liferay.dynamic.data.mapping.test.util.DDMTemplateTestUtil;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesToFieldsConverter;
 import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
-import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
+import com.liferay.headless.batch.engine.test.util.HeadlessBatchEngineTestUtil;
 import com.liferay.headless.delivery.client.dto.v1_0.ContentDocument;
 import com.liferay.headless.delivery.client.dto.v1_0.ContentField;
 import com.liferay.headless.delivery.client.dto.v1_0.ContentFieldValue;
@@ -2423,36 +2423,20 @@ public class StructuredContentResourceTest
 									LocaleUtil.getDefault()))))
 				).getContent());
 
-		User testCompanyAdminUser = UserTestUtil.getAdminUser(
-			testCompany.getCompanyId());
+		importTask = HeadlessBatchEngineTestUtil.waitForFinish("COMPLETED", structuredContentResource.
+			postSiteStructuredContentBatchHttpResponse(
+				testGroup.getGroupId(), null,
+				JSONUtil.putAll(
+					JSONFactoryUtil.createJSONObject(
+						String.valueOf(
+							_randomStructuredContent(
+								LocaleUtil.getDefault()))))
+			).getContent(), testCompany);
 
-		ImportTaskResource importTaskResource = ImportTaskResource.builder(
-		).authentication(
-			testCompanyAdminUser.getEmailAddress(),
-			PropsValues.DEFAULT_ADMIN_PASSWORD
-		).endpoint(
-			testCompany.getVirtualHostname(), 8080, "http"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
+		Assert.assertEquals(
+				1L, (long)importTask.getProcessedItemsCount());
+		Assert.assertEquals(1L, (long)importTask.getTotalItemsCount());
 
-		while (true) {
-			importTask = importTaskResource.getImportTask(importTask.getId());
-
-			if (StringUtil.equals(
-					importTask.getExecuteStatusAsString(), "COMPLETED") ||
-				StringUtil.equals(
-					importTask.getExecuteStatusAsString(), "FAILED")) {
-
-				Assert.assertEquals(
-					"COMPLETED", importTask.getExecuteStatusAsString());
-				Assert.assertEquals(
-					1L, (long)importTask.getProcessedItemsCount());
-				Assert.assertEquals(1L, (long)importTask.getTotalItemsCount());
-
-				break;
-			}
-		}
 	}
 
 	private static final String[] _COMPLETE_STRUCTURED_CONTENT_OPTIONS = {

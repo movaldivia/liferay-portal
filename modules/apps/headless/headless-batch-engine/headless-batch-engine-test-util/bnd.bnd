@@ -1,0 +1,5 @@
+Bundle-Name: Liferay Headless Batch Engine Test Util
+Bundle-SymbolicName: com.liferay.headless.batch.engine.test.util
+Bundle-Version: 1.0.0
+Export-Package: com.liferay.headless.batch.engine.test.util
+-includeresource: com.liferay.headless.batch.engine.client.jar=com.liferay.headless.batch.engine.client-*.jar;lib:=true

@@ -46,6 +46,9 @@ import com.liferay.headless.admin.user.client.pagination.Pagination;
 import com.liferay.headless.admin.user.client.problem.Problem;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
 import com.liferay.headless.admin.user.client.serdes.v1_0.UserAccountSerDes;
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
+import com.liferay.headless.batch.engine.test.util.HeadlessBatchEngineTestUtil;
 import com.liferay.object.constants.ObjectValidationRuleConstants;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectValidationRule;
@@ -61,6 +64,7 @@ import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.captcha.Captcha;
 import com.liferay.portal.kernel.captcha.CaptchaException;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -98,15 +102,7 @@ import com.liferay.portal.kernel.service.UserService;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.DataGuard;
-import com.liferay.portal.kernel.test.util.GroupTestUtil;
-import com.liferay.portal.kernel.test.util.HTTPTestUtil;
-import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
-import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.test.util.RoleTestUtil;
-import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
-import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.kernel.test.util.UserGroupTestUtil;
-import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.test.util.*;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -2532,17 +2528,16 @@ public class UserAccountResourceTest extends BaseUserAccountResourceTestCase {
 		UserAccount randomUserAccount = _randomUserAccount(
 			userAccount -> userAccount.setPassword(StringPool.BLANK));
 
-		_waitForFinish(
-			"COMPLETED", true,
-			HTTPTestUtil.invokeToJSONObject(
-				JSONUtil.put(
-					"items",
-					JSONUtil.put(
-						_jsonFactory.createJSONObject(
-							randomUserAccount.toString()))
-				).toString(),
-				"headless-admin-user/v1.0/user-accounts/batch",
-				Http.Method.POST));
+		ImportTask importTask = ImportTask.toDTO(
+				userAccountResource.
+						postUserAccountBatchHttpResponse(
+								null,
+								JSONUtil.putAll(
+										JSONFactoryUtil.createJSONObject(
+												String.valueOf(randomUserAccount)))
+						).getContent());
+
+		HeadlessBatchEngineTestUtil.waitForFinish("COMPLETED", importTask);
 
 		MailMessage mailMessage = MailServiceTestUtil.getLastMailMessage();
 
@@ -2786,33 +2781,6 @@ public class UserAccountResourceTest extends BaseUserAccountResourceTestCase {
 
 	private long[] _toUserIds(List<User> users) {
 		return ListUtil.toLongArray(users, User.USER_ID_ACCESSOR);
-	}
-
-	private JSONObject _waitForFinish(
-			String expectedExecuteStatus, boolean importTask,
-			JSONObject jsonObject)
-		throws Exception {
-
-		String endpoint = StringBundler.concat(
-			"headless-batch-engine/v1.0/",
-			importTask ? "import-task" : "export-task",
-			"/by-external-reference-code/");
-
-		while (true) {
-			jsonObject = HTTPTestUtil.invokeToJSONObject(
-				null, endpoint + jsonObject.getString("externalReferenceCode"),
-				Http.Method.GET);
-
-			String executeStatus = jsonObject.getString("executeStatus");
-
-			if (StringUtil.equals(executeStatus, "COMPLETED") ||
-				StringUtil.equals(executeStatus, "FAILED")) {
-
-				Assert.assertEquals(expectedExecuteStatus, executeStatus);
-
-				return jsonObject;
-			}
-		}
 	}
 
 	private AccountEntry _accountEntry;

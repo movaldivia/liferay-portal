@@ -3,4 +3,5 @@ Bundle-SymbolicName: com.liferay.headless.delivery.test
 Bundle-Version: 1.0.0
 -includeresource:\
 	com.liferay.headless.batch.engine.client.jar=com.liferay.headless.batch.engine.client-*.jar;lib:=true,\
-	com.liferay.headless.delivery.client.jar=com.liferay.headless.delivery.client-*.jar;lib:=true
+	com.liferay.headless.batch.engine.test.jar=com.liferay.headless.batch.engine.test-*.jar;lib:=true, \
+    com.liferay.headless.delivery.client.jar=com.liferay.headless.delivery.client-*.jar;lib:=true
