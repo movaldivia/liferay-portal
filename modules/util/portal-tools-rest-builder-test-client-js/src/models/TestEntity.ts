@@ -74,6 +74,16 @@
 			type: "NestedTestEntity",
 		},
 		{
+			baseName: "objectProperty",
+			name: "objectProperty",
+			type: "object",
+		},
+		{
+			baseName: "pageTestEntities",
+			name: "pageTestEntities",
+			type: "Array<TestEntity>",
+		},
+		{
 			baseName: "self",
 			name: "self",
 			type: "string",
