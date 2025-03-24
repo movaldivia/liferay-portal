@@ -14,6 +14,8 @@
 	* https://www.schema.org/Document
 	*/
 	export class TestEntity {
+			'pageTestEntities'?: Array<TestEntity>;
+			'objectProperty'?: object;
 			'dateCreated'?: Date;
 			'dateModified'?: Date;
 			'description'?: string;
@@ -33,6 +35,16 @@
 		name: string;
 		type: string;
 	}> = [
+		{
+			baseName: "pageTestEntities",
+			name: "pageTestEntities",
+			type: "Array<TestEntity>",
+		},
+		{
+			baseName: "objectProperty",
+			name: "objectProperty",
+			type: "object",
+		},
 		{
 			baseName: "dateCreated",
 			name: "dateCreated",
