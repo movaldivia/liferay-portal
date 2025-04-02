@@ -22,6 +22,8 @@
 			"jsonProperty"?: string;
 			"name"?: string;
 			"nestedTestEntity"?: NestedTestEntity;
+			"objectProperty"?: object;
+			"pageTestEntities"?: Array<TestEntity>;
 			"self"?: string;
 			"testEntities"?: TestEntity;
 			"type"?: 'ChildTestEntity1' | 'ChildTestEntity2' | 'ChildTestEntity3';
