@@ -10,6 +10,8 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import com.liferay.petra.function.UnsafeSupplier;
@@ -56,6 +58,16 @@ public class PageElement implements Serializable {
 	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The page element's definition."
 	)
+//	@JsonTypeInfo(
+//		use = JsonTypeInfo.Id.NAME,
+//		include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
+//		property = "type"
+//	)
+//	@JsonSubTypes({
+//		@JsonSubTypes.Type(value = PageContainerDefinition.class, name = "Container"),
+//		@JsonSubTypes.Type(value = PageColumnDefinition.class, name = "Column"),
+//		// Add other definition types here
+//	})
 	@Valid
 	public Object getDefinition() {
 		if (_definitionSupplier != null) {
