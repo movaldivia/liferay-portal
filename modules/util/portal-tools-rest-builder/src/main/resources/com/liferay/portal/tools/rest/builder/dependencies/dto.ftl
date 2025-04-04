@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -114,6 +115,28 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "${schemaName}")
 
+<#assign
+	enumSchemas = freeMarkerTool.getDTOEnumSchemas(configYAML, openAPIYAML, schema)
+	jsonMapPropertyNames = []
+	properties = freeMarkerTool.getDTOProperties(configYAML, openAPIYAML, schema, allSchemas)
+/>
+
+<#-- Detect if any property has a discriminator and get the property names -->
+<#assign hasPropertyWithDiscriminator = false />
+<#assign propertyOrder = [] />
+<#list properties?keys as propertyName>
+    <#assign propertySchema = freeMarkerTool.getDTOPropertySchema(configYAML, propertyName, schema, allSchemas) />
+    <#if propertySchema.discriminator?has_content>
+        <#assign hasPropertyWithDiscriminator = true />
+        <#assign propertyOrder = [propertySchema.discriminator.propertyName, propertyName] + propertyOrder />
+    </#if>
+</#list>
+
+<#-- Add JsonPropertyOrder if needed -->
+<#if hasPropertyWithDiscriminator>
+    @JsonPropertyOrder({<#list propertyOrder as propName>"${propName}"<#if propName_has_next>, </#if></#list>})
+</#if>
+
 <#assign dtoParentClassName = freeMarkerTool.getDTOParentClassName(openAPIYAML, schemaName)! />
 
 public <#if schema.discriminator?has_content>abstract</#if> class ${schemaName} <#if dtoParentClassName?has_content>extends ${dtoParentClassName}</#if> implements Serializable {
@@ -126,11 +149,6 @@ public <#if schema.discriminator?has_content>abstract</#if> class ${schemaName} 
 		return ObjectMapperUtil.unsafeReadValue(${schemaName}.class, json);
 	}
 
-	<#assign
-		enumSchemas = freeMarkerTool.getDTOEnumSchemas(configYAML, openAPIYAML, schema)
-		jsonMapPropertyNames = []
-		properties = freeMarkerTool.getDTOProperties(configYAML, openAPIYAML, schema, allSchemas)
-	/>
 
 	<#list properties?keys as propertyName>
 		<#assign
@@ -182,6 +200,20 @@ public <#if schema.discriminator?has_content>abstract</#if> class ${schemaName} 
 
 		<#if !["Boolean", "Boolean[]", "Date", "Date[]", "Double", "Double[]", "Integer", "Integer[]", "Long", "Long[]", "String", "String[]"]?seq_contains(propertyType)>
 			@Valid
+		</#if>
+
+		<#if propertySchema.discriminator?has_content>
+			@JsonTypeInfo(
+				use = JsonTypeInfo.Id.NAME,
+				include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
+				property = "${propertySchema.discriminator.propertyName}"
+			)
+			@JsonSubTypes({
+				<#list propertySchema.discriminator.mapping as mappingName, mappingSchema>
+					@JsonSubTypes.Type(value = ${freeMarkerTool.getReferenceName(mappingSchema)}.class, name = "${mappingName}")
+					<#if mappingName_has_next>,</#if>
+				</#list>
+			})
 		</#if>
 
 		<#assign capitalizedPropertyName = propertyName?cap_first />

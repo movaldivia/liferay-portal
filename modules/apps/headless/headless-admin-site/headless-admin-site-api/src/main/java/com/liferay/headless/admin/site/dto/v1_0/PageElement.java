@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -44,6 +45,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName(description = "A page element.", value = "PageElement")
 @JsonFilter("Liferay.Vulcan")
+@JsonPropertyOrder({"type", "definition"})
 @XmlRootElement(name = "PageElement")
 public class PageElement implements Serializable {
 
@@ -58,16 +60,53 @@ public class PageElement implements Serializable {
 	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The page element's definition."
 	)
-//	@JsonTypeInfo(
-//		use = JsonTypeInfo.Id.NAME,
-//		include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
-//		property = "type"
-//	)
-//	@JsonSubTypes({
-//		@JsonSubTypes.Type(value = PageContainerDefinition.class, name = "Container"),
-//		@JsonSubTypes.Type(value = PageColumnDefinition.class, name = "Column"),
-//		// Add other definition types here
-//	})
+	@JsonSubTypes(
+		{
+			@JsonSubTypes.Type(
+				name = "Collection", value = PageCollectionDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "CollectionItem",
+				value = PageCollectionItemDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "Column", value = PageColumnDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "Container", value = PageContainerDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "DropZone", value = PageDropZoneDefinition.class
+			),
+			@JsonSubTypes.Type(name = "Form", value = PageFormDefinition.class),
+			@JsonSubTypes.Type(
+				name = "FormStep", value = PageFormStepDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "FormStepContainer",
+				value = PageFormStepContainerDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "FragmentComposition",
+				value = PageFragmentCompositionInstanceDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "FragmentDropZone",
+				value = PageFragmentDropZoneDefinition.class
+			),
+			@JsonSubTypes.Type(
+				name = "Fragment", value = PageFragmentInstanceDefinition.class
+			),
+			@JsonSubTypes.Type(name = "Row", value = PageRowDefinition.class),
+			@JsonSubTypes.Type(
+				name = "Widget", value = PageWidgetInstanceDefinition.class
+			)
+		}
+	)
+	@JsonTypeInfo(
+		include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type",
+		use = JsonTypeInfo.Id.NAME
+	)
 	@Valid
 	public Object getDefinition() {
 		if (_definitionSupplier != null) {

@@ -1597,6 +1597,22 @@ components:
                     # @review
                     description:
                         The page element's definition.
+                    discriminator:
+                        propertyName: type
+                        mapping:
+                            Collection: "#/components/schemas/PageCollectionDefinition"
+                            CollectionItem: "#/components/schemas/PageCollectionItemDefinition"
+                            Column: "#/components/schemas/PageColumnDefinition"
+                            Container: "#/components/schemas/PageContainerDefinition"
+                            DropZone: "#/components/schemas/PageDropZoneDefinition"
+                            Form: "#/components/schemas/PageFormDefinition"
+                            FormStep: "#/components/schemas/PageFormStepDefinition"
+                            FormStepContainer: "#/components/schemas/PageFormStepContainerDefinition"
+                            FragmentComposition: "#/components/schemas/PageFragmentCompositionInstanceDefinition"
+                            FragmentDropZone: "#/components/schemas/PageFragmentDropZoneDefinition"
+                            Fragment: "#/components/schemas/PageFragmentInstanceDefinition"
+                            Row: "#/components/schemas/PageRowDefinition"
+                            Widget: "#/components/schemas/PageWidgetInstanceDefinition"
                     oneOf:
                         - $ref: "#/components/schemas/PageCollectionDefinition"
                         - $ref: "#/components/schemas/PageCollectionItemDefinition"

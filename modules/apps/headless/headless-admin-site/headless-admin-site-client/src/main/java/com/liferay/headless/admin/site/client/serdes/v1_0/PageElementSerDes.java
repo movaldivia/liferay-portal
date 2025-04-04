@@ -5,11 +5,8 @@
 
 package com.liferay.headless.admin.site.client.serdes.v1_0;
 
-import com.liferay.headless.admin.site.client.dto.v1_0.PageContainerDefinition;
 import com.liferay.headless.admin.site.client.dto.v1_0.PageElement;
 import com.liferay.headless.admin.site.client.json.BaseJSONParser;
-import java.lang.reflect.Method;
-
 
 import java.util.Iterator;
 import java.util.Map;
@@ -60,10 +57,6 @@ public class PageElementSerDes {
 				sb.append("\"");
 				sb.append((String)pageElement.getDefinition());
 				sb.append("\"");
-			}
-			else if (pageElement.getDefinition() instanceof Map) {
-
-				sb.append(_toJSON(pageElement.getDefinition()));
 			}
 			else {
 				sb.append(pageElement.getDefinition());
@@ -259,7 +252,7 @@ public class PageElementSerDes {
 
 			if (Objects.equals(jsonParserFieldName, "definition")) {
 				if (jsonParserFieldValue != null) {
-					pageElement.setDefinition(new PageContainerDefinition().toDTO(jsonParserFieldValue.toString()));
+					pageElement.setDefinition((Object)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
