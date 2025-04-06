@@ -45,7 +45,12 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName(description = "A page element.", value = "PageElement")
 @JsonFilter("Liferay.Vulcan")
-@JsonPropertyOrder({"type", "definition"})
+@JsonPropertyOrder(
+	{
+		"type", "definition", "externalReferenceCode", "pageElements",
+		"parentExternalReferenceCode", "position", "type"
+	}
+)
 @XmlRootElement(name = "PageElement")
 public class PageElement implements Serializable {
 

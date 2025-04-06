@@ -354,6 +354,28 @@ public class ${schemaName}SerDes {
 					<#assign fieldName = propertyName />
 				</#if>
 
+				<#if schemaName == "PageElement" && propertyName == "definition">
+					if (Objects.equals(jsonParserFieldName, "definition")) {
+					if (jsonParserFieldValue != null) {
+						// Get the parent object's type field which acts as discriminator
+						String type = ${schemaVarName}.getTypeAsString();
+
+                    	if (type != null) {
+							// Based on type, create the appropriate definition object
+							if (type.equals("Container")) {
+							${schemaVarName}.setDefinition(PageContainerDefinitionSerDes.toDTO(jsonParserFieldValue.toString()));
+                        }
+                        else if (type.equals("Column")) {
+							${schemaVarName}.setDefinition(PageColumnDefinitionSerDes.toDTO(jsonParserFieldValue.toString()));
+                        }
+                        // Add cases for all other possible types
+                        // ...
+                    }
+                }
+            }
+            else
+        </#if>
+
 				if (Objects.equals(jsonParserFieldName, "${fieldName}")) {
 					if (jsonParserFieldValue != null) {
 						<#assign capitalizedPropertyName = propertyName?cap_first />

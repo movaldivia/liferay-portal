@@ -252,6 +252,34 @@ public class PageElementSerDes {
 
 			if (Objects.equals(jsonParserFieldName, "definition")) {
 				if (jsonParserFieldValue != null) {
+
+					// Get the parent object's type field which acts as discriminator
+
+					String type = pageElement.getTypeAsString();
+
+					if (type != null) {
+
+						// Based on type, create the appropriate definition object
+
+						if (type.equals("Container")) {
+							pageElement.setDefinition(
+								PageContainerDefinitionSerDes.toDTO(
+									jsonParserFieldValue.toString()));
+						}
+						else if (type.equals("Column")) {
+							pageElement.setDefinition(
+								PageColumnDefinitionSerDes.toDTO(
+									jsonParserFieldValue.toString()));
+						}
+
+						// Add cases for all other possible types
+						// ...
+
+					}
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "definition")) {
+				if (jsonParserFieldValue != null) {
 					pageElement.setDefinition((Object)jsonParserFieldValue);
 				}
 			}

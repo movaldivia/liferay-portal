@@ -6,6 +6,7 @@
 package com.liferay.headless.admin.site.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.headless.admin.site.client.dto.v1_0.PageContainerDefinition;
 import com.liferay.headless.admin.site.client.dto.v1_0.PageElement;
 import com.liferay.headless.admin.site.client.dto.v1_0.PageExperience;
 import com.liferay.headless.admin.site.client.problem.Problem;
@@ -185,6 +186,51 @@ public class PageExperienceResourceTest
 		return new String[] {"externalReferenceCode", "name_i18n"};
 	}
 
+
+//	@Override
+//	protected PageExperience randomPageExperience() throws Exception {
+//		PageExperience pageExperience = super.randomPageExperience();
+//
+//		pageExperience.setName_i18n(
+//			Collections.singletonMap("en-US", RandomTestUtil.randomString()));
+//
+//		PageElement firstContainerPageElement = new PageElement();
+//		firstContainerPageElement.setPageElements(new PageElement[0]);
+//		firstContainerPageElement.setPosition(0);
+//		firstContainerPageElement.setType(PageElement.Type.CONTAINER);
+//
+//		// Add container definition with required indexed property
+//		PageContainerDefinition firstContainerDefinition = new PageContainerDefinition();
+//		firstContainerDefinition.setIndexed(Boolean.TRUE); // Set indexed property to avoid NPE
+//		firstContainerPageElement.setDefinition(firstContainerDefinition);
+//
+//		PageElement secondContainerPageElement = new PageElement();
+//		secondContainerPageElement.setPageElements(new PageElement[0]);
+//		secondContainerPageElement.setPosition(1);
+//		secondContainerPageElement.setType(PageElement.Type.CONTAINER);
+//
+//		// Add container definition with required indexed property
+//		PageContainerDefinition secondContainerDefinition = new PageContainerDefinition();
+//		secondContainerDefinition.setIndexed(Boolean.TRUE); // Set indexed property to avoid NPE
+//		secondContainerPageElement.setDefinition(secondContainerDefinition);
+//
+//		pageExperience.setPageElements(
+//			new PageElement[] {
+//				firstContainerPageElement, secondContainerPageElement
+//			});
+//
+//		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+//			testGroup.getGroupId());
+//
+//		pageExperience.setSegmentExternalReferenceCode(
+//			segmentsEntry.getSegmentsEntryKey());
+//
+//		pageExperience.setPageSpecificationExternalReferenceCode(
+//			_draftLayout.getExternalReferenceCode());
+//
+//		return pageExperience;
+//	}
+
 	@Override
 	protected PageExperience randomPageExperience() throws Exception {
 		PageExperience pageExperience = super.randomPageExperience();
@@ -192,18 +238,37 @@ public class PageExperienceResourceTest
 		pageExperience.setName_i18n(
 			Collections.singletonMap("en-US", RandomTestUtil.randomString()));
 
+		// Create first container page element
 		PageElement firstContainerPageElement = new PageElement();
-
 		firstContainerPageElement.setPageElements(new PageElement[0]);
 		firstContainerPageElement.setPosition(0);
 		firstContainerPageElement.setType(PageElement.Type.CONTAINER);
 
-		PageElement secondContainerPageElement = new PageElement();
+		// Create a proper PageContainerDefinition object for the first element
+		PageContainerDefinition firstContainerDefinition = new PageContainerDefinition();
+		firstContainerDefinition.setIndexed(Boolean.TRUE);
+		firstContainerDefinition.setContentVisibility("");
+		// Set other required properties of PageContainerDefinition as needed
 
+		// Set the definition property to the PageContainerDefinition object
+		firstContainerPageElement.setDefinition(firstContainerDefinition);
+
+		// Create second container page element (same as first)
+		PageElement secondContainerPageElement = new PageElement();
 		secondContainerPageElement.setPageElements(new PageElement[0]);
 		secondContainerPageElement.setPosition(1);
 		secondContainerPageElement.setType(PageElement.Type.CONTAINER);
 
+		// Create a proper PageContainerDefinition object for the second element
+		PageContainerDefinition secondContainerDefinition = new PageContainerDefinition();
+		secondContainerDefinition.setIndexed(Boolean.TRUE);
+		secondContainerDefinition.setContentVisibility("");
+		// Set other required properties of PageContainerDefinition as needed
+
+		// Set the definition property to the PageContainerDefinition object
+		secondContainerPageElement.setDefinition(secondContainerDefinition);
+
+		// Set the array of page elements
 		pageExperience.setPageElements(
 			new PageElement[] {
 				firstContainerPageElement, secondContainerPageElement
