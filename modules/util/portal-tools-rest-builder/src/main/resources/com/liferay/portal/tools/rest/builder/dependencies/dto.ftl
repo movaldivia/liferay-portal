@@ -125,16 +125,18 @@ import javax.xml.bind.annotation.XmlRootElement;
 <#assign hasPropertyWithDiscriminator = false />
 <#assign propertyOrder = [] />
 <#list properties?keys as propertyName>
-    <#assign propertySchema = freeMarkerTool.getDTOPropertySchema(configYAML, propertyName, schema, allSchemas) />
-    <#if propertySchema.discriminator?has_content>
-        <#assign hasPropertyWithDiscriminator = true />
-        <#assign propertyOrder = [propertySchema.discriminator.propertyName, propertyName] + propertyOrder />
-    </#if>
+	<#assign propertySchema = freeMarkerTool.getDTOPropertySchema(configYAML, propertyName, schema, allSchemas) />
+	<#if propertySchema.discriminator?has_content>
+		<#assign hasPropertyWithDiscriminator = true />
+		<#assign propertyOrder = [propertySchema.discriminator.propertyName, propertyName] + propertyOrder />
+	<#else>
+		<#assign propertyOrder = propertyOrder + [propertyName] />
+	</#if>
 </#list>
 
 <#-- Add JsonPropertyOrder if needed -->
 <#if hasPropertyWithDiscriminator>
-    @JsonPropertyOrder({<#list propertyOrder as propName>"${propName}"<#if propName_has_next>, </#if></#list>})
+	@JsonPropertyOrder({<#list propertyOrder as propName>"${propName}"<#if propName_has_next>, </#if></#list>})
 </#if>
 
 <#assign dtoParentClassName = freeMarkerTool.getDTOParentClassName(openAPIYAML, schemaName)! />
