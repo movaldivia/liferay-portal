@@ -252,33 +252,119 @@ public class PageElementSerDes {
 
 			if (Objects.equals(jsonParserFieldName, "definition")) {
 				if (jsonParserFieldValue != null) {
+					String typeValue = pageElement.getTypeAsString();
 
-					// Get the parent object's type field which acts as discriminator
-
-					String type = pageElement.getTypeAsString();
-
-					if (type != null) {
-
-						// Based on type, create the appropriate definition object
-
-						if (type.equals("Container")) {
+					if (typeValue != null) {
+						if (typeValue.equals("Collection")) {
 							pageElement.setDefinition(
-								PageContainerDefinitionSerDes.toDTO(
-									jsonParserFieldValue.toString()));
+								PageCollectionDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
 						}
-						else if (type.equals("Column")) {
+
+						if (typeValue.equals("CollectionItem")) {
+							pageElement.setDefinition(
+								PageCollectionItemDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("Column")) {
 							pageElement.setDefinition(
 								PageColumnDefinitionSerDes.toDTO(
-									jsonParserFieldValue.toString()));
+									(String)jsonParserFieldValue));
+
+							return;
 						}
 
-						// Add cases for all other possible types
-						// ...
+						if (typeValue.equals("Container")) {
+							pageElement.setDefinition(
+								PageContainerDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
 
+							return;
+						}
+
+						if (typeValue.equals("DropZone")) {
+							pageElement.setDefinition(
+								PageDropZoneDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("Form")) {
+							pageElement.setDefinition(
+								PageFormDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("FormStep")) {
+							pageElement.setDefinition(
+								PageFormStepDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("FormStepContainer")) {
+							pageElement.setDefinition(
+								PageFormStepContainerDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("FragmentComposition")) {
+							pageElement.setDefinition(
+								PageFragmentCompositionInstanceDefinitionSerDes.
+									toDTO((String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("FragmentDropZone")) {
+							pageElement.setDefinition(
+								PageFragmentDropZoneDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("Fragment")) {
+							pageElement.setDefinition(
+								PageFragmentInstanceDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("Row")) {
+							pageElement.setDefinition(
+								PageRowDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
+
+						if (typeValue.equals("Widget")) {
+							pageElement.setDefinition(
+								PageWidgetInstanceDefinitionSerDes.toDTO(
+									(String)jsonParserFieldValue));
+
+							return;
+						}
 					}
 				}
+
+				return;
 			}
-			else if (Objects.equals(jsonParserFieldName, "definition")) {
+
+			if (Objects.equals(jsonParserFieldName, "definition")) {
 				if (jsonParserFieldValue != null) {
 					pageElement.setDefinition((Object)jsonParserFieldValue);
 				}

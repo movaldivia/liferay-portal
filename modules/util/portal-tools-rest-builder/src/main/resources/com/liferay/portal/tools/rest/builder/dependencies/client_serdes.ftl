@@ -337,6 +337,44 @@ public class ${schemaName}SerDes {
 
 		@Override
 		protected void setField(${schemaName} ${schemaVarName}, String jsonParserFieldName, Object jsonParserFieldValue) {
+
+<#-- First, check if this field is a polymorphic property -->
+<#assign hasSpecialHandling = false />
+
+<#list properties?keys as propName>
+<#assign propSchema = freeMarkerTool.getDTOPropertySchema(configYAML, propName, schema, allSchemas)! />
+<#if dtoParentClassName?has_content && !propSchema?has_content>
+<#assign propSchema = freeMarkerTool.getDTOPropertySchema(configYAML, propName, dtoParentSchema, allSchemas) />
+</#if>
+
+<#if propSchema.discriminator?has_content>
+<#assign hasSpecialHandling = true />
+<#assign discriminator = propSchema.discriminator />
+<#assign discriminatorPropName = discriminator.propertyName />
+<#if propSchema.name??>
+<#assign fieldName = propSchema.name />
+<#else>
+<#assign fieldName = propName />
+</#if>
+
+if (Objects.equals(jsonParserFieldName, "${fieldName}")) {
+if (jsonParserFieldValue != null) {
+String ${discriminatorPropName}Value = ${schemaVarName}.get${discriminatorPropName?cap_first}AsString();
+
+            if (${discriminatorPropName}Value != null) {
+<#list discriminator.mapping as mappingName, mappingSchema>
+if (${discriminatorPropName}Value.equals("${mappingName}")) {
+${schemaVarName}.set${propName?cap_first}(${freeMarkerTool.getReferenceName(mappingSchema)}SerDes.toDTO((String)jsonParserFieldValue));
+                    return;
+                }
+                </#list>
+            }
+        }
+        return;
+    }
+        </#if>
+    </#list>
+
 			<#list properties?keys as propertyName>
 				<#assign propertySchema = freeMarkerTool.getDTOPropertySchema(configYAML, propertyName, schema, allSchemas)! />
 
@@ -353,28 +391,6 @@ public class ${schemaName}SerDes {
 				<#else>
 					<#assign fieldName = propertyName />
 				</#if>
-
-				<#if schemaName == "PageElement" && propertyName == "definition">
-					if (Objects.equals(jsonParserFieldName, "definition")) {
-					if (jsonParserFieldValue != null) {
-						// Get the parent object's type field which acts as discriminator
-						String type = ${schemaVarName}.getTypeAsString();
-
-                    	if (type != null) {
-							// Based on type, create the appropriate definition object
-							if (type.equals("Container")) {
-							${schemaVarName}.setDefinition(PageContainerDefinitionSerDes.toDTO(jsonParserFieldValue.toString()));
-                        }
-                        else if (type.equals("Column")) {
-							${schemaVarName}.setDefinition(PageColumnDefinitionSerDes.toDTO(jsonParserFieldValue.toString()));
-                        }
-                        // Add cases for all other possible types
-                        // ...
-                    }
-                }
-            }
-            else
-        </#if>
 
 				if (Objects.equals(jsonParserFieldName, "${fieldName}")) {
 					if (jsonParserFieldValue != null) {
