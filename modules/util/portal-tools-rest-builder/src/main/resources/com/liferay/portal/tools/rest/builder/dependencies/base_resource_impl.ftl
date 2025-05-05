@@ -1014,9 +1014,9 @@ public abstract class Base${schemaName}ResourceImpl
 								,
 							  <#list deleteByIdJavaMethodSignature.javaMethodParameters as param>
 								<#if param?index gt 0>
-								  <#if param.parameterType == "Boolean">
+								  <#if stringUtil.equals(param.parameterType, "Boolean")>
 									(Boolean)parameters.getOrDefault("${param.parameterName}", ${param.defaultValue?has_content?then(param.defaultValue, "false")})
-								  <#elseif param.parameterType == "String">
+								  <#elseif stringUtil.equals(param.parameterType, "String")>
 									(String)parameters.getOrDefault("${param.parameterName}", ${param.defaultValue?has_content?then('"' + param.defaultValue + '"', "null")})
 								  <#elseif param.parameterType?contains("Long") || param.parameterType?contains("Integer")>
 									(${param.parameterType})parameters.getOrDefault("${param.parameterName}", ${param.defaultValue?has_content?then(param.defaultValue, "null")})
