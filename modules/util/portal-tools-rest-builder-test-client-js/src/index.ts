@@ -13,6 +13,7 @@
 	export {EntityModelResourceTestEntity2API} from './apis/EntityModelResourceTestEntity2API';
 	export {FilterAPI} from './apis/FilterAPI';
 	export {SchemaAPI} from './apis/SchemaAPI';
+	export {SimpleTestEntityAPI} from './apis/SimpleTestEntityAPI';
 	export {SiteTestEntityAPI} from './apis/SiteTestEntityAPI';
 	export {SortAPI} from './apis/SortAPI';
 	export {TestEntityAddressAPI} from './apis/TestEntityAddressAPI';
@@ -41,6 +42,7 @@
 	export {PageTestEntity} from './models/PageTestEntity';
 	export {Permission} from './models/Permission';
 	export {Schema} from './models/Schema';
+	export {SimpleTestEntity} from './models/SimpleTestEntity';
 	export {SiteTestEntity} from './models/SiteTestEntity';
 	export {Sort} from './models/Sort';
 	export {StringTestEntity} from './models/StringTestEntity';
