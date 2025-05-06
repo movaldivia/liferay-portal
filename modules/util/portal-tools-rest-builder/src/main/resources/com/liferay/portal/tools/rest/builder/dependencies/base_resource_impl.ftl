@@ -490,7 +490,7 @@ public abstract class Base${schemaName}ResourceImpl
 			<#elseif stringUtil.equals(javaMethodSignature.returnType, "void")>
 			<#elseif javaMethodSignature.returnType?contains("Page<")>
 				return Page.of(Collections.emptyList());
-			<#elseif freeMarkerTool.hasHTTPMethod(javaMethodSignature, "patch") && freeMarkerTool.hasJavaMethodSignature(javaMethodSignatures, "get" + javaMethodSignature.methodName?remove_beginning("patch")) && freeMarkerTool.hasJavaMethodSignature(javaMethodSignatures, "put" + javaMethodSignature.methodName?remove_beginning("patch"))&& freeMarkerTool.getJavaMethodSignature(javaMethodSignatures, "put" + javaMethodSignature.methodName?remove_beginning("patch")).operation.requestBody.content?keys?seq_contains("application/json") && !javaMethodSignature.operation.requestBody.content?keys?seq_contains("multipart/form-data")>
+			<#elseif freeMarkerTool.hasHTTPMethod(javaMethodSignature, "patch") && freeMarkerTool.hasJavaMethodSignature(javaMethodSignatures, "get" + javaMethodSignature.methodName?remove_beginning("patch")) && freeMarkerTool.hasJavaMethodSignature(javaMethodSignatures, "put" + javaMethodSignature.methodName?remove_beginning("patch")) && freeMarkerTool.hasCorrespondingMethodWithMediaType(javaMethodSignatures, javaMethodSignature, "put", "patch", "application/json", "application/xml") && !javaMethodSignature.operation.requestBody.content?keys?seq_contains("multipart/form-data")>
 				<#assign
 					generatePatchMethods = true
 					javaMethodParameters = javaMethodSignature.javaMethodParameters[0..javaMethodSignature.javaMethodParameters?size-2]
