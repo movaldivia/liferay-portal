@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.security.service.access.policy.internal.upgrade.v3_0_0.util.SAPEntryTable;
 import com.liferay.portal.security.service.access.policy.internal.upgrade.v3_0_1.SAPEntryUpgradeProcess;
+import com.liferay.portal.security.service.access.policy.internal.upgrade.v3_0_2.SAPEntryServiceSignatureUpgradeProcess;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
 import org.osgi.service.component.annotations.Component;
@@ -56,14 +57,7 @@ public class SAPServiceUpgradeStepRegistrator
 
 		registry.register("3.0.0", "3.0.1", new SAPEntryUpgradeProcess());
 
-		registry.register(
-			"3.0.1", "3.0.2",
-			UpgradeProcessFactory.runSQL(
-				"update SAPEntry set allowedServiceSignatures = REPLACE(" +
-					"allowedServiceSignatures, " +
-					"'com.liferay.object.rest.internal.resource.v1_0.ObjectEntryResourceImpl#putByExternalReferenceCodeCurrentExternalReferenceCodeObjectRelationshipNameRelatedExternalReferenceCode', " +
-					"'com.liferay.object.rest.internal.resource.v1_0.ObjectEntryRelatedObjectsResourceImpl#putByExternalReferenceCodeCurrentExternalReferenceCodeObjectRelationshipNameRelatedExternalReferenceCode') " +
-				"where allowedServiceSignatures like '%ObjectEntryResourceImpl#putByExternalReferenceCodeCurrentExternalReferenceCodeObjectRelationshipNameRelatedExternalReferenceCode%'"));
+		registry.register("3.0.1", "3.0.2", new SAPEntryServiceSignatureUpgradeProcess());
 	}
 
 }
