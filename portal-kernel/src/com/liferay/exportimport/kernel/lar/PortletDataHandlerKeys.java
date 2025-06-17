@@ -65,6 +65,8 @@ public class PortletDataHandlerKeys {
 
 	public static final String LOGO = "LOGO";
 
+	public static final String FAVICON = "FAVICON";
+
 	public static final String PERFORM_DIRECT_BINARY_IMPORT =
 		"PERFORM_DIRECT_BINARY_IMPORT";
 

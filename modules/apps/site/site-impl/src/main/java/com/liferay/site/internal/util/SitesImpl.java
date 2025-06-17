@@ -7,6 +7,7 @@ package com.liferay.site.internal.util;
 
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.exportimport.kernel.background.task.BackgroundTaskExecutorNames;
 import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationSettingsMapFactoryUtil;
 import com.liferay.exportimport.kernel.configuration.constants.ExportImportConfigurationConstants;
@@ -48,6 +49,8 @@ import com.liferay.portal.kernel.model.impl.VirtualLayout;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ImageLocalService;
@@ -531,6 +534,9 @@ public class SitesImpl implements Sites {
 
 		mergeLayoutSetPrototypeLayoutsInBackground(
 			layoutSetPrototype, layoutSet);
+
+		// Ensure favicon file entry has guest view permissions
+		_fixFaviconPermissions(layoutSet);
 	}
 
 	@Override
@@ -854,11 +860,14 @@ public class SitesImpl implements Sites {
 				PortletDataHandlerKeys.LOGO,
 				new String[] {Boolean.TRUE.toString()});
 			parameterMap.put(
-				PortletDataHandlerKeys.PORTLET_DATA,
+				PortletDataHandlerKeys.FAVICON,
 				new String[] {Boolean.TRUE.toString()});
 			parameterMap.put(
+				PortletDataHandlerKeys.PORTLET_DATA,
+				new String[] {Boolean.FALSE.toString()});
+			parameterMap.put(
 				PortletDataHandlerKeys.PORTLET_DATA_ALL,
-				new String[] {Boolean.TRUE.toString()});
+				new String[] {Boolean.FALSE.toString()});
 		}
 		else {
 			parameterMap.put(
@@ -876,6 +885,17 @@ public class SitesImpl implements Sites {
 			else {
 				parameterMap.put(
 					PortletDataHandlerKeys.LOGO,
+					new String[] {Boolean.FALSE.toString()});
+			}
+
+			if (PropsValues.LAYOUT_SET_PROTOTYPE_PROPAGATE_FAVICON) {
+				parameterMap.put(
+					PortletDataHandlerKeys.FAVICON,
+					new String[] {Boolean.TRUE.toString()});
+			}
+			else {
+				parameterMap.put(
+					PortletDataHandlerKeys.FAVICON,
 					new String[] {Boolean.FALSE.toString()});
 			}
 
@@ -1226,24 +1246,56 @@ public class SitesImpl implements Sites {
 			if (layoutSetPrototype != null) {
 				layoutSetPrototypeUuid = layoutSetPrototype.getUuid();
 
-				// Merge without enabling the link
+				// Always perform initial import when creating site from template
 
-				if (!layoutSetPrototypeLinkEnabled &&
-					(layoutSetPrototypeId > 0)) {
+				if (layoutSetPrototypeId > 0) {
+					// Check if this is initial site creation by checking if any layouts exist
+					int layoutsCount = _layoutLocalService.getLayoutsCount(
+						groupId, privateLayout);
+						
+					if (layoutsCount == 0) {
+						// This is initial site creation - always import template content
+						boolean mergeLayoutPrototypesThreadLocalInProgress =
+							MergeLayoutPrototypesThreadLocal.isInProgress();
 
-					boolean mergeLayoutPrototypesThreadLocalInProgress =
-						MergeLayoutPrototypesThreadLocal.isInProgress();
+						try {
+							MergeLayoutPrototypesThreadLocal.setInProgress(true);
 
-					try {
-						MergeLayoutPrototypesThreadLocal.setInProgress(true);
-
-						importLayoutSetPrototype(
-							layoutSetPrototype, groupId, privateLayout,
-							getLayoutSetPrototypesParameters(true), true);
+							importLayoutSetPrototype(
+								layoutSetPrototype, groupId, privateLayout,
+								getLayoutSetPrototypesParameters(true), true);
+								
+							// Fix favicon permissions after import
+							LayoutSet layoutSet = _layoutSetLocalService.getLayoutSet(
+								groupId, privateLayout);
+							_fixFaviconPermissions(layoutSet);
+						}
+						finally {
+							MergeLayoutPrototypesThreadLocal.setInProgress(
+								mergeLayoutPrototypesThreadLocalInProgress);
+						}
 					}
-					finally {
-						MergeLayoutPrototypesThreadLocal.setInProgress(
-							mergeLayoutPrototypesThreadLocalInProgress);
+					else if (!layoutSetPrototypeLinkEnabled) {
+						// This is template application without link - also import
+						boolean mergeLayoutPrototypesThreadLocalInProgress =
+							MergeLayoutPrototypesThreadLocal.isInProgress();
+
+						try {
+							MergeLayoutPrototypesThreadLocal.setInProgress(true);
+
+							importLayoutSetPrototype(
+								layoutSetPrototype, groupId, privateLayout,
+								getLayoutSetPrototypesParameters(true), true);
+								
+							// Fix favicon permissions after import
+							LayoutSet layoutSet = _layoutSetLocalService.getLayoutSet(
+								groupId, privateLayout);
+							_fixFaviconPermissions(layoutSet);
+						}
+						finally {
+							MergeLayoutPrototypesThreadLocal.setInProgress(
+								mergeLayoutPrototypesThreadLocalInProgress);
+						}
 					}
 				}
 			}
@@ -1374,11 +1426,42 @@ public class SitesImpl implements Sites {
 
 	private static final Log _log = LogFactoryUtil.getLog(SitesImpl.class);
 
+	private void _fixFaviconPermissions(LayoutSet layoutSet) {
+		try {
+			if (layoutSet.getFaviconFileEntryId() <= 0) {
+				return;
+			}
+
+			FileEntry faviconFileEntry = _dlAppLocalService.getFileEntry(
+				layoutSet.getFaviconFileEntryId());
+
+			Role guestRole = _roleLocalService.getRole(
+				layoutSet.getCompanyId(), RoleConstants.GUEST);
+
+			_resourcePermissionLocalService.setResourcePermissions(
+				layoutSet.getCompanyId(),
+				"com.liferay.document.library.kernel.model.DLFileEntry",
+				ResourceConstants.SCOPE_INDIVIDUAL,
+				String.valueOf(faviconFileEntry.getFileEntryId()),
+				guestRole.getRoleId(), new String[] {ActionKeys.VIEW});
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Unable to set guest view permissions for favicon file entry",
+					exception);
+			}
+		}
+	}
+
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference
 	private BackgroundTaskManager _backgroundTaskManager;
+
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
 	private ExportImportConfigurationLocalService

@@ -5,6 +5,7 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.staging.LayoutStagingUtil;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.petra.string.StringPool;
@@ -259,6 +260,16 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 
 		layoutSet.setModifiedDate(new Date());
 		layoutSet.setFaviconFileEntryId(faviconFileEntryId);
+
+		// Mark favicon as manually changed to prevent template propagation
+		// Only do this if we're not in an import/merge process
+		if (!ExportImportThreadLocal.isImportInProcess() && 
+			!MergeLayoutPrototypesThreadLocal.isInProgress()) {
+			
+			UnicodeProperties settingsProperties = layoutSet.getSettingsProperties();
+			settingsProperties.setProperty("faviconManuallyChanged", "true");
+			layoutSet.setSettingsProperties(settingsProperties);
+		}
 
 		return layoutSetPersistence.update(layoutSet);
 	}

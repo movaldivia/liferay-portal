@@ -1133,6 +1133,10 @@ public class PropsValues {
 		GetterUtil.getBoolean(
 			PropsUtil.get(PropsKeys.LAYOUT_SET_PROTOTYPE_PROPAGATE_LOGO));
 
+	public static final boolean LAYOUT_SET_PROTOTYPE_PROPAGATE_FAVICON =
+		GetterUtil.getBoolean(
+			PropsUtil.get(PropsKeys.LAYOUT_SET_PROTOTYPE_PROPAGATE_FAVICON));
+
 	public static final boolean LAYOUT_SHOW_HTTP_STATUS = GetterUtil.getBoolean(
 		PropsUtil.get(PropsKeys.LAYOUT_SHOW_HTTP_STATUS));
 

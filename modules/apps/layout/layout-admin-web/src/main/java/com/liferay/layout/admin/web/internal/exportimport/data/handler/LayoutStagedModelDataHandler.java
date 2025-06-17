@@ -1308,6 +1308,13 @@ public class LayoutStagedModelDataHandler
 			PortletDataContext portletDataContext)
 		throws Exception {
 
+		boolean favicon = MapUtil.getBoolean(
+			portletDataContext.getParameterMap(), PortletDataHandlerKeys.FAVICON);
+
+		if (!favicon) {
+			return;
+		}
+
 		if (layout.getFaviconFileEntryId() <= 0) {
 			return;
 		}
@@ -2065,6 +2072,13 @@ public class LayoutStagedModelDataHandler
 		Layout layout, Element layoutElement, Layout importedLayout,
 		PortletDataContext portletDataContext) {
 
+		boolean favicon = MapUtil.getBoolean(
+			portletDataContext.getParameterMap(), PortletDataHandlerKeys.FAVICON);
+
+		if (!favicon) {
+			return;
+		}
+
 		Map<Long, Long> fileEntryIds =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
 				FileEntry.class);
@@ -2096,6 +2110,29 @@ public class LayoutStagedModelDataHandler
 		}
 
 		importedLayout.setFaviconFileEntryId(faviconFileEntryId);
+
+		// Ensure favicon file entry has guest view permissions
+		if (faviconFileEntryId > 0) {
+			try {
+				FileEntry faviconFileEntry = _dlAppLocalService.getFileEntry(
+					faviconFileEntryId);
+
+				_resourceLocalService.addResources(
+					portletDataContext.getCompanyId(),
+					portletDataContext.getGroupId(),
+					portletDataContext.getUserId(layout.getUserUuid()),
+					"com.liferay.document.library.kernel.model.DLFileEntry",
+					String.valueOf(faviconFileEntry.getFileEntryId()), false,
+					false, false);
+			}
+			catch (PortalException portalException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Unable to add guest permissions to favicon file entry",
+						portalException);
+				}
+			}
+		}
 	}
 
 	private void _importFriendlyURLEntries(

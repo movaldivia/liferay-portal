@@ -40,9 +40,12 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.ThemeSetting;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ImageLocalService;
@@ -50,6 +53,9 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutSetBranchLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -65,6 +71,7 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.model.adapter.util.ModelAdapterUtil;
 import com.liferay.portal.model.impl.ThemeSettingImpl;
 import com.liferay.portal.service.impl.LayoutLocalServiceHelper;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.ThemeFactoryUtil;
 import com.liferay.sites.kernel.util.Sites;
 
@@ -444,6 +451,13 @@ public class StagedLayoutSetStagedModelDataHandler
 			StagedLayoutSet stagedLayoutSet, Element stagedLayoutSetElement)
 		throws Exception {
 
+		boolean favicon = MapUtil.getBoolean(
+			portletDataContext.getParameterMap(), PortletDataHandlerKeys.FAVICON);
+
+		if (!favicon) {
+			return;
+		}
+
 		LayoutSet layoutSet = stagedLayoutSet.getLayoutSet();
 
 		long faviconFileEntryId = layoutSet.getFaviconFileEntryId();
@@ -734,6 +748,13 @@ public class StagedLayoutSetStagedModelDataHandler
 			StagedLayoutSet stagedLayoutSet, Element stagedLayoutSetElement)
 		throws Exception {
 
+		boolean favicon = MapUtil.getBoolean(
+			portletDataContext.getParameterMap(), PortletDataHandlerKeys.FAVICON);
+
+		if (!favicon) {
+			return;
+		}
+
 		LayoutSet layoutSet = stagedLayoutSet.getLayoutSet();
 
 		StagedModelDataHandlerUtil.importReferenceStagedModel(
@@ -775,9 +796,56 @@ public class StagedLayoutSetStagedModelDataHandler
 			portletDataContext.getGroupId(),
 			portletDataContext.isPrivateLayout());
 
-		existingLayoutSet.setFaviconFileEntryId(faviconFileEntryId);
+		// Check if this is initial import or ongoing propagation
+		boolean isInitialImport = portletDataContext.isDataStrategyMirror();
+		
+		// Only update favicon if:
+		// 1. This is initial import (always copy), OR
+		// 2. Favicon propagation is enabled AND site favicon hasn't been manually changed
+		boolean shouldUpdateFavicon = isInitialImport;
+		
+		if (!isInitialImport && PropsValues.LAYOUT_SET_PROTOTYPE_PROPAGATE_FAVICON) {
+			// Check if the site's favicon has been manually changed
+			// If the current favicon doesn't match the template, it was manually changed
+			UnicodeProperties settingsProperties = existingLayoutSet.getSettingsProperties();
+			String faviconManuallyChanged = settingsProperties.getProperty("faviconManuallyChanged");
+			
+			if (!"true".equals(faviconManuallyChanged)) {
+				shouldUpdateFavicon = true;
+			}
+		}
+		
+		if (shouldUpdateFavicon) {
+			existingLayoutSet.setFaviconFileEntryId(faviconFileEntryId);
+			
+			// Use persistence layer directly to avoid triggering manual change flag
+			_layoutSetLocalService.updateLayoutSet(existingLayoutSet);
+		}
 
-		_layoutSetLocalService.updateLayoutSet(existingLayoutSet);
+		// Ensure favicon file entry has guest view permissions
+		if (faviconFileEntryId > 0) {
+			try {
+				FileEntry faviconFileEntry = _dlAppService.getFileEntry(
+					faviconFileEntryId);
+
+				Role guestRole = _roleLocalService.getRole(
+					portletDataContext.getCompanyId(), RoleConstants.GUEST);
+
+				_resourceLocalService.setResourcePermissions(
+					portletDataContext.getCompanyId(),
+					"com.liferay.document.library.kernel.model.DLFileEntry",
+					ResourceConstants.SCOPE_INDIVIDUAL,
+					String.valueOf(faviconFileEntry.getFileEntryId()),
+					guestRole.getRoleId(), new String[] {ActionKeys.VIEW});
+			}
+			catch (PortalException portalException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Unable to set guest view permissions for favicon file entry",
+						portalException);
+				}
+			}
+		}
 	}
 
 	private void _importLogo(PortletDataContext portletDataContext) {
@@ -1184,6 +1252,12 @@ public class StagedLayoutSetStagedModelDataHandler
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
 
 	@Reference
 	private Sites _sites;
