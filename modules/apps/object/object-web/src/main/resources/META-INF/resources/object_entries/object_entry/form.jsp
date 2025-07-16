@@ -11,6 +11,7 @@
 ObjectEntryDisplayContext objectEntryDisplayContext = (ObjectEntryDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 String backURL = objectEntryDisplayContext.getBackURL();
+boolean defaultObjectLayout = objectEntryDisplayContext.getObjectLayoutTab() == null;
 ObjectDefinition objectDefinition = objectEntryDisplayContext.getObjectDefinition1();
 ObjectEntry objectEntry = objectEntryDisplayContext.getObjectEntry();
 String portletNamespace = portletDisplay.getNamespace();
@@ -40,7 +41,7 @@ portletDisplay.setURLBack(backURL);
 				</clay:col>
 			</clay:row>
 
-			<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-21926") && objectDefinition.isEnableFriendlyURLCustomization() && (objectEntryDisplayContext.getObjectLayoutTab() == null) %>'>
+			<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-21926") && objectDefinition.isEnableFriendlyURLCustomization() && defaultObjectLayout %>'>
 				<clay:panel-group>
 					<clay:panel
 						collapsable="<%= true %>"
@@ -54,6 +55,7 @@ portletDisplay.setURLBack(backURL);
 									<liferay-friendly-url:input
 										className="<%= objectDefinition.getClassName() %>"
 										classPK="<%= (objectEntry == null) ? 0 : objectEntry.getObjectEntryId() %>"
+										disabled="<%= objectEntryDisplayContext.isReadOnly() %>"
 										helpMessage='<%= LanguageUtil.get(request, "the-friendly-url-is-automatically-generated-based-on-the-entry-title-field") %>'
 										inputAddon="<%= objectEntryDisplayContext.getURLSeparator() %>"
 										name="friendlyURL"
@@ -65,7 +67,7 @@ portletDisplay.setURLBack(backURL);
 				</clay:panel-group>
 			</c:if>
 
-			<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-17564") && (objectEntryDisplayContext.getObjectLayoutTab() == null) %>'>
+			<c:if test="<%= objectDefinition.isEnableObjectEntrySchedule() && defaultObjectLayout %>">
 				<div>
 					<react:component
 						module="{ScheduleContainer} from object-web"
@@ -88,7 +90,7 @@ portletDisplay.setURLBack(backURL);
 
 	<c:if test="<%= !objectEntryDisplayContext.isReadOnly() %>">
 		<c:choose>
-			<c:when test='<%= FeatureFlagManagerUtil.isEnabled("LPD-17564") && (objectEntryDisplayContext.getObjectLayoutTab() == null) %>'>
+			<c:when test="<%= objectDefinition.isEnableObjectEntrySchedule() && defaultObjectLayout %>">
 				<div>
 					<react:component
 						module="{ObjectEntryFooter} from object-web"
@@ -190,13 +192,17 @@ portletDisplay.setURLBack(backURL);
 				return false;
 			}
 
-			const localDate = date.replace(/Z$/, '');
+			const inputDateTime = new Date(date.replace(/Z$/, ''));
 
-			const currentDateTime = new Date();
+			const languageId = Liferay.ThemeDisplay.getBCP47LanguageId();
 
-			const dateTime = new Date(localDate);
+			const timeZone = Liferay.ThemeDisplay.getTimeZone();
 
-			return currentDateTime >= dateTime;
+			const timeZoneDateTime = new Date(
+				new Date().toLocaleString(languageId, {timeZone})
+			);
+
+			return timeZoneDateTime >= inputDateTime;
 		}
 
 		Liferay.provide(window, '<portlet:namespace />submitObjectEntry', () => {
@@ -206,14 +212,18 @@ portletDisplay.setURLBack(backURL);
 
 			const current = DDMFormInstance.reactComponentRef.current;
 
-			const loadingElement = document.createElement('span');
+			let loadingElement = form.querySelector('.loading-animation');
 
-			loadingElement.className =
-				'loading-animation loading-animation-secondary loading-animation-sm';
+			if (!loadingElement) {
+				loadingElement = document.createElement('span');
 
-			loadingElement.ariaHidden = 'true';
+				loadingElement.className =
+					'loading-animation loading-animation-secondary loading-animation-sm';
 
-			form.insertAdjacentElement('afterbegin', loadingElement);
+				loadingElement.ariaHidden = 'true';
+
+				form.insertAdjacentElement('afterbegin', loadingElement);
+			}
 
 			current.validate().then((result) => {
 				if (result) {

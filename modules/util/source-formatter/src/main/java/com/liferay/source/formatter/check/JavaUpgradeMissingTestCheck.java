@@ -78,6 +78,9 @@ public class JavaUpgradeMissingTestCheck extends BaseFileCheck {
 			"Test");
 
 		expectedTestClassName = StringUtil.replace(
+			expectedTestClassName, "kernel.upgrade.data.cleanup.test",
+			"upgrade.data.cleanup.test");
+		expectedTestClassName = StringUtil.replace(
 			expectedTestClassName, "kernel.upgrade.test", "upgrade.test");
 
 		File file = JavaSourceUtil.getJavaFile(

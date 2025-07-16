@@ -21,6 +21,7 @@ import {HeadlessAdminContentApiHelper} from './HeadlessAdminContentApiHelper';
 import {HeadlessAdminTaxonomyApiHelper} from './HeadlessAdminTaxonomyApiHelper';
 import {HeadlessAdminUserApiHelper} from './HeadlessAdminUserApiHelper';
 import {HeadlessAdminWorkflowApiHelper} from './HeadlessAdminWorkflowApiHelper';
+import {HeadlessAssetLibraryApiHelper} from './HeadlessAssetLibraryApiHelper';
 import {HeadlessBatchEngineApiHelper} from './HeadlessBatchEngineApiHelper';
 import {HeadlessChangeTrackingApiHelper} from './HeadlessChangeTrackingApiHelper';
 import {HeadlessCommerceAdminAccountApiHelper} from './HeadlessCommerceAdminAccountApiHelper';
@@ -35,6 +36,7 @@ import {HeadlessCommerceDeliveryCartApiHelper} from './HeadlessCommerceDeliveryC
 import {HeadlessCommerceDeliveryCatalogApiHelper} from './HeadlessCommerceDeliveryCatalogApiHelper';
 import {HeadlessCommerceReturnApiHelper} from './HeadlessCommerceReturnApiHelper';
 import {HeadlessDeliveryApiHelper} from './HeadlessDeliveryApiHelper';
+import {HeadlessPortalInstanceApiHelper} from './HeadlessPortalInstanceApiHelper';
 import {HeadlessSiteApiHelper} from './HeadlessSiteApiHelper';
 import {ListTypeAdminApiHelper} from './ListTypeAdminApiHelper';
 import {NotificationApiHelper} from './NotificationApiHelper';
@@ -120,6 +122,7 @@ export class ApiHelpers {
 	readonly headlessAdminTaxonomy: HeadlessAdminTaxonomyApiHelper;
 	readonly headlessAdminUser: HeadlessAdminUserApiHelper;
 	readonly headlessAdminWorkflow: HeadlessAdminWorkflowApiHelper;
+	readonly headlessAssetLibrary: HeadlessAssetLibraryApiHelper;
 	readonly headlessBatchEngine: HeadlessBatchEngineApiHelper;
 	readonly headlessChangeTracking: HeadlessChangeTrackingApiHelper;
 	readonly headlessCommerceAdminAccount: HeadlessCommerceAdminAccountApiHelper;
@@ -135,6 +138,7 @@ export class ApiHelpers {
 	readonly headlessCommerceReturn: HeadlessCommerceReturnApiHelper;
 	readonly headlessDelivery: HeadlessDeliveryApiHelper;
 	readonly headlessSite: HeadlessSiteApiHelper;
+	readonly headlessPortalInstance: HeadlessPortalInstanceApiHelper;
 	readonly jsonWebServicesAnnouncementsEntryApiHelper: JSONWebServicesAnnouncementsEntryApiHelper;
 	readonly jsonWebServicesAssetDisplayPageEntry: JSONWebServicesAssetDisplayPageEntryApiHelper;
 	readonly jsonWebServicesAssetListEntry: JSONWebServicesAssetListEntryApiHelper;
@@ -190,6 +194,7 @@ export class ApiHelpers {
 		this.headlessAdminTaxonomy = new HeadlessAdminTaxonomyApiHelper(this);
 		this.headlessAdminUser = new HeadlessAdminUserApiHelper(this);
 		this.headlessAdminWorkflow = new HeadlessAdminWorkflowApiHelper(this);
+		this.headlessAssetLibrary = new HeadlessAssetLibraryApiHelper(this);
 		this.headlessBatchEngine = new HeadlessBatchEngineApiHelper(this);
 		this.headlessChangeTracking = new HeadlessChangeTrackingApiHelper(this);
 		this.headlessCommerceAdminAccount =
@@ -215,6 +220,7 @@ export class ApiHelpers {
 		this.headlessCommerceReturn = new HeadlessCommerceReturnApiHelper(this);
 		this.headlessDelivery = new HeadlessDeliveryApiHelper(this);
 		this.headlessSite = new HeadlessSiteApiHelper(this);
+		this.headlessPortalInstance = new HeadlessPortalInstanceApiHelper(this);
 		this.jsonWebServicesAnnouncementsEntryApiHelper =
 			new JSONWebServicesAnnouncementsEntryApiHelper(this);
 		this.jsonWebServicesAssetDisplayPageEntry =
@@ -632,6 +638,11 @@ export class DataApiHelpers extends ApiHelpers {
 				await this.headlessAdminUser.deleteUserGroupUsers(
 					userGroupId,
 					userIds
+				);
+			}
+			else if (item.type === 'virtual-instance') {
+				await this.headlessPortalInstance.deleteVirtualInstance(
+					item.id
 				);
 			}
 			else if (item.type === 'warehouse') {

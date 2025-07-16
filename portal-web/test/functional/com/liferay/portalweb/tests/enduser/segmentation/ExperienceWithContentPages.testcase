@@ -1,10 +1,12 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
-	property ci.retries.disabled = "true";
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
+	property property.group = "analytics.cloud.profile";
 	property testray.main.component.name = "Segmentation";
 
 	setUp {
@@ -197,7 +199,7 @@ definition {
 	@priority = 3
 	@uitest
 	test AddTwoExperiencesBelowDefault {
-		property portal.acceptance = "true";
+		property portal.acceptance = "false";
 
 		task ("Add segment for the user created") {
 			JSONSegmentsentry.addSegment(
@@ -270,7 +272,7 @@ definition {
 	@priority = 3
 	@uitest
 	test AddTwoExperiencesOverDefault {
-		property portal.acceptance = "true";
+		property portal.acceptance = "false";
 
 		task ("Add segment for the user created") {
 			JSONSegmentsentry.addSegment(

@@ -287,6 +287,16 @@ public class ObjectEntryVersionLocalServiceWrapper
 	}
 
 	@Override
+	public void expireObjectEntryVersions(
+			long userId, com.liferay.object.model.ObjectEntry objectEntry,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws Exception {
+
+		_objectEntryVersionLocalService.expireObjectEntryVersions(
+			userId, objectEntry, serviceContext);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectEntryVersion fetchObjectEntryVersion(
 		long objectEntryVersionId) {
 
@@ -446,6 +456,14 @@ public class ObjectEntryVersionLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectEntryVersionLocalService.getPersistedModel(primaryKeyObj);
+	}
+
+	@Override
+	public boolean isLatestObjectEntryVersion(long objectEntryId, int version)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectEntryVersionLocalService.isLatestObjectEntryVersion(
+			objectEntryId, version);
 	}
 
 	@Override

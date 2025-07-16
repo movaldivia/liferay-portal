@@ -11,6 +11,7 @@ export default function actionGeneratesChanges(actionType: Action['type']) {
 		case 'add-referenced-structures':
 		case 'add-repeatable-group':
 		case 'delete-child':
+		case 'ungroup':
 		case 'update-field':
 		case 'update-repeatable-group':
 		case 'update-structure':
@@ -20,6 +21,7 @@ export default function actionGeneratesChanges(actionType: Action['type']) {
 		case 'create-structure':
 		case 'delete-selection':
 		case 'publish-structure':
+		case 'refresh-referenced-structures':
 		case 'set-error':
 		case 'set-selection':
 		case 'validate':

@@ -31,6 +31,7 @@ function DropdownItem({action, closeMenu, onClick, url}: IDropdownItem) {
 
 	return (
 		<ClayDropDown.Item
+			disabled={action.disabled}
 			href={isLink(target, null) ? url : undefined}
 			onClick={(event) =>
 				onClick({
@@ -151,6 +152,7 @@ function ActionsDropdown({
 			<LinkOrButton
 				aria-label={action.label}
 				className="btn btn-secondary btn-sm"
+				disabled={action.disabled}
 				href={
 					isLink(
 						action.target,
@@ -161,6 +163,8 @@ function ActionsDropdown({
 				}
 				monospaced={Boolean(action.icon)}
 				onClick={(event: any) => {
+					event.stopPropagation();
+
 					onClick({
 						action,
 						event,
@@ -215,6 +219,7 @@ function ActionsDropdown({
 				onActiveChange={() =>
 					onMenuActiveChange && onMenuActiveChange(!menuActive)
 				}
+				onClick={(event) => event.stopPropagation()}
 				trigger={
 					<ClayButton
 						className="component-action dropdown-toggle"

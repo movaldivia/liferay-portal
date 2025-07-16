@@ -44,6 +44,7 @@ import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.transaction.TransactionsUtil;
 import com.liferay.portal.upgrade.PortalUpgradeProcess;
+import com.liferay.portal.upgrade.data.cleanup.DataCleanupPreupgradeProcessSuite;
 import com.liferay.portal.upgrade.log.UpgradeLogContext;
 import com.liferay.portal.util.InitUtil;
 import com.liferay.portal.util.PortalClassPathUtil;
@@ -341,6 +342,25 @@ public class DBUpgrader {
 					StartupHelperUtil.setUpgrading(false);
 
 					System.exit(1);
+				}
+			}
+
+			if (PropsValues.UPGRADE_DATABASE_PREUPGRADE_DATA_CLEANUP_ENABLED) {
+				DataCleanupPreupgradeProcessSuite
+					dataCleanupPreupgradeProcessSuite =
+						new DataCleanupPreupgradeProcessSuite();
+
+				try {
+					dataCleanupPreupgradeProcessSuite.cleanUp();
+				}
+				catch (Exception exception) {
+					_log.error(
+						"Unable to execute preupgrade data cleanup process",
+						exception);
+
+					StartupHelperUtil.setUpgrading(false);
+
+					throw exception;
 				}
 			}
 

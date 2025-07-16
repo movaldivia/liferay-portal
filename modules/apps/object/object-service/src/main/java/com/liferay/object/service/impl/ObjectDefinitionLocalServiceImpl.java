@@ -142,7 +142,6 @@ import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
@@ -166,6 +165,7 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.MethodKey;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -593,15 +593,13 @@ public class ObjectDefinitionLocalServiceImpl
 					_deleteFromTable(
 						objectDefinition.getExtensionDBTableName());
 
-					List<ObjectField> localizedObjectFields =
-						_objectFieldLocalService.getLocalizedObjectFields(
-							objectDefinition.getObjectDefinitionId());
+					DynamicObjectDefinitionLocalizationTable
+						dynamicObjectDefinitionLocalizationTable =
+							DynamicObjectDefinitionLocalizationTableFactory.
+								create(
+									objectDefinition, _objectFieldLocalService);
 
-					if ((!FeatureFlagManagerUtil.isEnabled(
-							objectDefinition.getCompanyId(), "LPD-32050") &&
-						 objectDefinition.isEnableLocalization()) ||
-						!localizedObjectFields.isEmpty()) {
-
+					if (dynamicObjectDefinitionLocalizationTable != null) {
 						_deleteFromTable(
 							objectDefinition.getLocalizationDBTableName());
 					}
@@ -889,6 +887,15 @@ public class ObjectDefinitionLocalServiceImpl
 
 	@Override
 	public List<ObjectDefinition> getObjectDefinitions(
+		long companyId, boolean active, boolean system, int status, int start,
+		int end, OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return objectDefinitionPersistence.findByC_A_S_S(
+			companyId, active, system, status, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<ObjectDefinition> getObjectDefinitions(
 		long companyId, boolean active, int status) {
 
 		return objectDefinitionPersistence.findByC_A_S(
@@ -907,6 +914,15 @@ public class ObjectDefinitionLocalServiceImpl
 		throws PortalException {
 
 		return objectDefinitionPersistence.countByCompanyId(companyId);
+	}
+
+	@Override
+	public int getObjectDefinitionsCount(
+			long companyId, boolean active, boolean system, int status)
+		throws PortalException {
+
+		return objectDefinitionPersistence.countByC_A_S_S(
+			companyId, active, system, status);
 	}
 
 	@Override
@@ -1278,30 +1294,6 @@ public class ObjectDefinitionLocalServiceImpl
 
 			return objectDefinitionPersistence.update(objectDefinition);
 		}
-
-		return objectDefinition;
-	}
-
-	@Indexable(type = IndexableType.REINDEX)
-	@Override
-	public ObjectDefinition updateRootDescendantNodeObjectDefinition(
-		ObjectDefinition objectDefinition, long rootObjectDefinitionId) {
-
-		objectDefinition.setPanelCategoryKey(StringPool.BLANK);
-		objectDefinition.setPortlet(false);
-		objectDefinition.setRootObjectDefinitionId(rootObjectDefinitionId);
-
-		objectDefinition = objectDefinitionPersistence.update(objectDefinition);
-
-		_resourceActions.removeModelResource(
-			objectDefinition.getClassName(), ActionKeys.DELETE);
-		_resourceActions.removeModelResource(
-			objectDefinition.getClassName(), ActionKeys.UPDATE);
-		_resourceActions.removeModelResource(
-			objectDefinition.getClassName(), ActionKeys.VIEW);
-
-		_workflowDefinitionLinkLocalService.deleteWorkflowDefinitionLinks(
-			objectDefinition.getCompanyId(), objectDefinition.getClassName());
 
 		return objectDefinition;
 	}
@@ -2425,11 +2417,8 @@ public class ObjectDefinitionLocalServiceImpl
 				String previousRESTContextPath =
 					nodeObjectDefinition.getRESTContextPath();
 
-				nodeObjectDefinition =
-					objectDefinitionLocalService.
-						updateRootDescendantNodeObjectDefinition(
-							nodeObjectDefinition,
-							objectDefinition1.getRootObjectDefinitionId());
+				nodeObjectDefinition.setRootObjectDefinitionId(
+					objectDefinition1.getRootObjectDefinitionId());
 
 				nodeObjectDefinition.setPreviousRESTContextPath(
 					previousRESTContextPath);
@@ -2483,18 +2472,12 @@ public class ObjectDefinitionLocalServiceImpl
 		String previousRESTContextPath = objectDefinition2.getRESTContextPath();
 
 		if (objectDefinition1.isApproved()) {
-			objectDefinition2 =
-				objectDefinitionLocalService.
-					updateRootDescendantNodeObjectDefinition(
-						objectDefinition2,
-						objectDefinition1.getRootObjectDefinitionId());
+			objectDefinition2.setRootObjectDefinitionId(
+				objectDefinition1.getRootObjectDefinitionId());
 		}
 		else {
 			objectDefinition2.setRootObjectDefinitionId(
 				objectDefinition2.getObjectDefinitionId());
-
-			objectDefinition2 = objectDefinitionPersistence.update(
-				objectDefinition2);
 		}
 
 		objectDefinition2.setPreviousRESTContextPath(previousRESTContextPath);

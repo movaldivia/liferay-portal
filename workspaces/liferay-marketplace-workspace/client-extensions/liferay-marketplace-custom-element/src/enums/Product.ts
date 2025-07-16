@@ -119,6 +119,7 @@ export enum ProductType {
 	DXP = 'dxp',
 	LOW_CODE_CONFIGURATION = 'low-code-configuration',
 	OTHER = 'other',
+	SSA_SAAS = 'ssa-saas',
 }
 
 export enum ProductTypeVocabulary {
@@ -190,6 +191,7 @@ export const ProductTypeLabels = {
 	[ProductType.DXP]: 'DXP',
 	[ProductType.LOW_CODE_CONFIGURATION]: 'Low-Code Configuration',
 	[ProductType.OTHER]: 'Other',
+	[ProductType.SSA_SAAS]: 'SSA SaaS',
 } as const;
 
 export const ProductTypeLicenseOptions = {
@@ -203,6 +205,7 @@ export const ProductTypeLicenseOptions = {
 	],
 	[ProductType.LOW_CODE_CONFIGURATION]: [ProductLicenseTier.STANDARD],
 	[ProductType.OTHER]: [ProductLicenseTier.STANDARD],
+	[ProductType.SSA_SAAS]: [ProductLicenseTier.STANDARD],
 };
 
 export const ProductWorkflowDisplayType = {

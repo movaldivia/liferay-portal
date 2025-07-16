@@ -46,6 +46,20 @@ public class PlaywrightBatchBuildTestrayCaseResult
 	}
 
 	@Override
+	public BuildReport getBuildReport() {
+		if (JenkinsResultsParserUtil.isBuildCachingEnabled()) {
+			DownstreamBuildReport cachedDownstreamBuildReport =
+				_playwrightTestClassMethod.getCachedDownstreamBuildReport();
+
+			if (cachedDownstreamBuildReport != null) {
+				return cachedDownstreamBuildReport;
+			}
+		}
+
+		return super.getBuildReport();
+	}
+
+	@Override
 	public String getComponentName() {
 		String componentName =
 			_playwrightJUnitTestClass.getTestrayMainComponentName();
@@ -174,6 +188,15 @@ public class PlaywrightBatchBuildTestrayCaseResult
 
 	@Override
 	public TestReport getTestReport() {
+		if (JenkinsResultsParserUtil.isBuildCachingEnabled()) {
+			TestReport cachedTestReport =
+				_playwrightTestClassMethod.getCachedTestReport();
+
+			if (cachedTestReport != null) {
+				return cachedTestReport;
+			}
+		}
+
 		DownstreamBuildReport downstreamBuildReport =
 			getDownstreamBuildReport();
 
@@ -217,11 +240,15 @@ public class PlaywrightBatchBuildTestrayCaseResult
 	protected TestrayAttachment getPlaywrightReportTestrayAttachment() {
 		return getTestrayAttachment(
 			getBuildReport(), "Playwright Report",
-			"/playwright-report/index.html");
+			getAxisName() + "/playwright-report/index.html");
 	}
 
 	protected TestrayAttachment getPlaywrightTraceViewerTestrayAttachment() {
 		TestReport testReport = getTestReport();
+
+		if (testReport == null) {
+			return null;
+		}
 
 		Matcher matcher = _traceZipPattern.matcher(
 			testReport.getErrorStackTrace());

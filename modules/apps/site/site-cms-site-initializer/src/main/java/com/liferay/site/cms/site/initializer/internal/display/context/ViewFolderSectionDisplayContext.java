@@ -15,6 +15,7 @@ import com.liferay.object.service.ObjectDefinitionSettingLocalService;
 import com.liferay.object.service.ObjectEntryFolderLocalService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -143,7 +144,6 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 			super.getFDSActionDropdownItems();
 
 		fdsActionDropdownItems.add(
-			1,
 			new FDSActionDropdownItem(
 				"{embedded.file.link.href}", "download", "download",
 				LanguageUtil.get(httpServletRequest, "download"), "get", null,
@@ -154,7 +154,6 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS)) {
 
 			fdsActionDropdownItems.add(
-				2,
 				new FDSActionDropdownItem(
 					StringBundler.concat(
 						"/o", GroupConstants.CMS_FRIENDLY_URL,
@@ -168,6 +167,12 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 						"entryClassName", ObjectEntryFolder.class.getName()
 					).build()));
 		}
+
+		fdsActionDropdownItems.add(
+			new FDSActionDropdownItem(
+				StringPool.BLANK, "info-circle-open", "show-details",
+				LanguageUtil.get(httpServletRequest, "show-details"), null,
+				null, "infoPanel"));
 
 		return fdsActionDropdownItems;
 	}

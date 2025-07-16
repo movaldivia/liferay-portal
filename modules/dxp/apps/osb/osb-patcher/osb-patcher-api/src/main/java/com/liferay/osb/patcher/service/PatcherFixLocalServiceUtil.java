@@ -64,6 +64,16 @@ public class PatcherFixLocalServiceUtil {
 			patcherBuildId, patcherFixIds);
 	}
 
+	public static PatcherFix addPatcherFix(
+			long userId, long patcherProjectVersionId, double keyVersion,
+			String name, int type, int status, List<Long> parentPatcherFixIds)
+		throws Exception {
+
+		return getService().addPatcherFix(
+			userId, patcherProjectVersionId, keyVersion, name, type, status,
+			parentPatcherFixIds);
+	}
+
 	/**
 	 * Adds the patcher fix to the database. Also notifies the appropriate model listeners.
 	 *
@@ -542,6 +552,70 @@ public class PatcherFixLocalServiceUtil {
 			patcherFixPackId, patcherFixIds);
 	}
 
+	public static PatcherFix updateComments(long patcherFixId, String comments)
+		throws PortalException {
+
+		return getService().updateComments(patcherFixId, comments);
+	}
+
+	public static PatcherFix updateJenkinsResult(
+			long patcherFixId, String jenkinsResults)
+		throws PortalException {
+
+		return getService().updateJenkinsResult(patcherFixId, jenkinsResults);
+	}
+
+	public static PatcherFix updateLatestFix(
+			long patcherFixId, boolean latestFix)
+		throws PortalException {
+
+		return getService().updateLatestFix(patcherFixId, latestFix);
+	}
+
+	public static PatcherFix updateNotified(long patcherFixId, boolean notified)
+		throws PortalException {
+
+		return getService().updateNotified(patcherFixId, notified);
+	}
+
+	public static PatcherFix updateObsolete(long patcherFixId, boolean obsolete)
+		throws PortalException {
+
+		return getService().updateObsolete(patcherFixId, obsolete);
+	}
+
+	public static PatcherFix updatePatcherFix(
+			long patcherFixId, boolean latestFix, int type)
+		throws PortalException {
+
+		return getService().updatePatcherFix(patcherFixId, latestFix, type);
+	}
+
+	public static PatcherFix updatePatcherFix(
+			long patcherFixId, String gitHash, int status)
+		throws PortalException {
+
+		return getService().updatePatcherFix(patcherFixId, gitHash, status);
+	}
+
+	public static PatcherFix updatePatcherFix(
+			long patcherFixId, String dependencies, int fixPackStatus,
+			String requirements)
+		throws PortalException {
+
+		return getService().updatePatcherFix(
+			patcherFixId, dependencies, fixPackStatus, requirements);
+	}
+
+	public static PatcherFix updatePatcherFix(
+			long patcherFixId, String gitHash, String jenkinsResults,
+			int status)
+		throws PortalException {
+
+		return getService().updatePatcherFix(
+			patcherFixId, gitHash, jenkinsResults, status);
+	}
+
 	/**
 	 * Updates the patcher fix in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -554,6 +628,25 @@ public class PatcherFixLocalServiceUtil {
 	 */
 	public static PatcherFix updatePatcherFix(PatcherFix patcherFix) {
 		return getService().updatePatcherFix(patcherFix);
+	}
+
+	public static PatcherFix updateRequestKey(
+			long patcherFixId, String requestKey)
+		throws PortalException {
+
+		return getService().updateRequestKey(patcherFixId, requestKey);
+	}
+
+	public static PatcherFix updateStatus(long patcherFixId, int status)
+		throws PortalException {
+
+		return getService().updateStatus(patcherFixId, status);
+	}
+
+	public static PatcherFix updateType(long patcherFixId, int type)
+		throws PortalException {
+
+		return getService().updateType(patcherFixId, type);
 	}
 
 	public static PatcherFixLocalService getService() {

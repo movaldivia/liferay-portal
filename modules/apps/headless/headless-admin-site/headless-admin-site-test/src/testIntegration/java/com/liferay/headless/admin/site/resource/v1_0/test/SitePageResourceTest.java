@@ -10,8 +10,11 @@ import com.liferay.headless.admin.site.client.dto.v1_0.ContentPageSettings;
 import com.liferay.headless.admin.site.client.dto.v1_0.ContentPageSpecification;
 import com.liferay.headless.admin.site.client.dto.v1_0.FriendlyUrlHistory;
 import com.liferay.headless.admin.site.client.dto.v1_0.PageSettings;
+import com.liferay.headless.admin.site.client.dto.v1_0.PageSpecification;
 import com.liferay.headless.admin.site.client.dto.v1_0.SitePage;
 import com.liferay.headless.admin.site.client.dto.v1_0.WidgetPageSettings;
+import com.liferay.headless.admin.site.client.pagination.Page;
+import com.liferay.headless.admin.site.client.pagination.Pagination;
 import com.liferay.headless.admin.site.client.problem.Problem;
 import com.liferay.headless.admin.site.client.resource.v1_0.SitePageResource;
 import com.liferay.headless.admin.site.resource.v1_0.test.util.LayoutPageTemplateEntryTestUtil;
@@ -20,6 +23,8 @@ import com.liferay.headless.admin.site.resource.v1_0.test.util.PageSpecification
 import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.function.UnsafeRunnable;
+import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -172,23 +177,6 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				serviceContext));
 	}
 
-	@Override
-	@Test
-	public void testGetSiteSiteByExternalReferenceCodeSitePagesPage()
-		throws Exception {
-
-		super.testGetSiteSiteByExternalReferenceCodeSitePagesPage();
-	}
-
-	@Override
-	@Test
-	public void testGetSiteSiteByExternalReferenceCodeSitePagesPageWithPagination()
-		throws Exception {
-
-		super.
-			testGetSiteSiteByExternalReferenceCodeSitePagesPageWithPagination();
-	}
-
 	@Ignore
 	@Override
 	@Test
@@ -214,6 +202,8 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 			SitePage.Type.CONTENT_PAGE);
 		_testPatchSiteSiteByExternalReferenceCodeSitePage(
 			SitePage.Type.WIDGET_PAGE);
+		_testPatchSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications();
+		_testPatchSiteSiteByExternalReferenceCodeSitePageWithPriority();
 
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(
@@ -251,6 +241,8 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				StringUtil.toLowerCase(RandomTestUtil.randomString()),
 				layout.getExternalReferenceCode(), SitePage.Type.CONTENT_PAGE,
 				StringUtil.toLowerCase(RandomTestUtil.randomString())));
+
+		_testPostByExternalReferenceCodeSitePageWithPageSpecifications();
 	}
 
 	@Override
@@ -306,6 +298,8 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 			SitePage.Type.CONTENT_PAGE);
 		_testPutSiteSiteByExternalReferenceCodeSitePage(
 			SitePage.Type.WIDGET_PAGE);
+		_testPutSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications();
+		_testPutSiteSiteByExternalReferenceCodeSitePageWithPriority();
 
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(
@@ -432,6 +426,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 
 		for (Layout layout : layouts) {
 			_assertProblemException(
+				null,
 				() ->
 					sitePageResource.
 						deleteSiteSiteByExternalReferenceCodeSitePage(
@@ -484,6 +479,45 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 			layout, sitePage.getPageSpecifications());
 	}
 
+	private void _assertPageSpecifications(
+			ContentPageSpecification draftContentPageSpecification,
+			ContentPageSpecification publishedContentPageSpecification,
+			SitePage sitePage)
+		throws Exception {
+
+		Layout layout = _layoutLocalService.getLayoutByExternalReferenceCode(
+			sitePage.getExternalReferenceCode(), testGroup.getGroupId());
+
+		PageSpecification.Status status = PageSpecification.Status.APPROVED;
+
+		if (!layout.isPublished()) {
+			status = PageSpecification.Status.DRAFT;
+		}
+
+		PageSpecificationsTestUtil.assertPageSpecifications(
+			draftContentPageSpecification, publishedContentPageSpecification,
+			sitePage.getPageSpecifications(), layout, status);
+	}
+
+	private void _assertParentAndPriority(
+			String expectedParentSitePageExternalReferenceCode,
+			int expectedPriority, SitePage sitePage)
+		throws Exception {
+
+		SitePage getSitePage =
+			sitePageResource.getSiteSiteByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(),
+				sitePage.getExternalReferenceCode());
+
+		Assert.assertEquals(
+			expectedParentSitePageExternalReferenceCode,
+			getSitePage.getParentSitePageExternalReferenceCode());
+
+		PageSettings pageSettings = getSitePage.getPageSettings();
+
+		Assert.assertEquals(expectedPriority, (int)pageSettings.getPriority());
+	}
+
 	private void _assertPatchSiteSiteByExternalReferenceCodeSitePage(
 			SitePage expectedSitePage, SitePage sitePage)
 		throws Exception {
@@ -493,7 +527,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				testGroup.getExternalReferenceCode(),
 				sitePage.getExternalReferenceCode(), sitePage);
 
-		equals(expectedSitePage, patchSitePage);
+		assertEquals(expectedSitePage, patchSitePage);
 		assertValid(patchSitePage);
 
 		_assertSitePage(
@@ -521,6 +555,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		throws Exception {
 
 		_assertProblemException(
+			null,
 			() -> sitePageResource.patchSiteSiteByExternalReferenceCodeSitePage(
 				testGroup.getExternalReferenceCode(),
 				sitePage.getExternalReferenceCode(), sitePage));
@@ -532,6 +567,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		throws Exception {
 
 		_assertProblemException(
+			null,
 			() ->
 				sitePageResource.
 					postSiteSiteByExternalReferenceCodeSitePagePageSpecification(
@@ -548,7 +584,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 	}
 
 	private void _assertProblemException(
-			UnsafeRunnable<Exception> unsafeRunnable)
+			String expectedTitle, UnsafeRunnable<Exception> unsafeRunnable)
 		throws Exception {
 
 		try {
@@ -559,7 +595,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 			Problem problem = problemException.getProblem();
 
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertNull(problem.getTitle());
+			Assert.assertEquals(expectedTitle, problem.getTitle());
 		}
 	}
 
@@ -582,6 +618,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		throws Exception {
 
 		_assertProblemException(
+			null,
 			() -> sitePageResource.putSiteSiteByExternalReferenceCodeSitePage(
 				testGroup.getExternalReferenceCode(),
 				sitePage.getExternalReferenceCode(), sitePage));
@@ -619,6 +656,11 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				sitePage.getParentSitePageExternalReferenceCode());
 		}
 
+		PageSettings pageSettings = sitePage.getPageSettings();
+
+		Assert.assertEquals(
+			layout.getPriority(), (int)pageSettings.getPriority());
+
 		Assert.assertEquals(layout.getUuid(), sitePage.getUuid());
 
 		if (Objects.equals(layout.getType(), LayoutConstants.TYPE_CONTENT)) {
@@ -639,6 +681,53 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 			layout.getTypeSettingsProperty(
 				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID),
 			widgetPageSettings.getLayoutTemplateId());
+	}
+
+	private int _getExpectedPriority(
+			String defaultParentSitePageExternalReferenceCode,
+			String parentSitePageExternalReferenceCode, Integer priority)
+		throws Exception {
+
+		long parentLayoutId = LayoutConstants.DEFAULT_PARENT_LAYOUT_ID;
+
+		Layout parentLayout = null;
+
+		if ((parentSitePageExternalReferenceCode == null) &&
+			Validator.isNotNull(defaultParentSitePageExternalReferenceCode)) {
+
+			parentLayout = _layoutLocalService.getLayoutByExternalReferenceCode(
+				defaultParentSitePageExternalReferenceCode,
+				testGroup.getGroupId());
+		}
+		else if (Validator.isNotNull(parentSitePageExternalReferenceCode)) {
+			parentLayout = _layoutLocalService.getLayoutByExternalReferenceCode(
+				parentSitePageExternalReferenceCode, testGroup.getGroupId());
+		}
+
+		if (parentLayout != null) {
+			parentLayoutId = parentLayout.getLayoutId();
+		}
+
+		int maxPriority = _layoutLocalService.getLayoutsCount(
+			testGroup.getGroupId(), false, parentLayoutId);
+
+		if (maxPriority == 0) {
+			return 0;
+		}
+
+		if ((parentSitePageExternalReferenceCode == null) ||
+			Objects.equals(
+				defaultParentSitePageExternalReferenceCode,
+				parentSitePageExternalReferenceCode)) {
+
+			maxPriority = maxPriority - 1;
+		}
+
+		if (priority == null) {
+			return maxPriority;
+		}
+
+		return Math.min(priority, maxPriority);
 	}
 
 	private PageSettings _getPageSettings(SitePage.Type type) throws Exception {
@@ -704,6 +793,10 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 
 				pageSettings.setHiddenFromNavigation(
 					RandomTestUtil::randomBoolean);
+				pageSettings.setPriority(
+					_priorities.merge(
+						curParentSitePageExternalReferenceCode, 0,
+						(oldPriority, defaultPriority) -> oldPriority + 1));
 
 				return pageSettings;
 			});
@@ -852,6 +945,8 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		sitePage.setParentSitePageExternalReferenceCode(
 			layout.getExternalReferenceCode());
 
+		pageSettings.setPriority(0);
+
 		_assertPatchSiteSiteByExternalReferenceCodeSitePage(
 			sitePage,
 			new SitePage() {
@@ -874,6 +969,125 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				sitePage.getUuid()));
 	}
 
+	private void _testPatchSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications()
+		throws Exception {
+
+		_testPatchSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED, PageSpecification.Status.DRAFT,
+			PageSpecification.Status.APPROVED);
+		_testPatchSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED, PageSpecification.Status.DRAFT,
+			PageSpecification.Status.DRAFT);
+		_testPatchSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.DRAFT, PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED);
+		_testPatchSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.DRAFT, PageSpecification.Status.DRAFT,
+			PageSpecification.Status.APPROVED, PageSpecification.Status.DRAFT);
+	}
+
+	private void
+			_testPatchSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+				PageSpecification.Status newDraftLayoutStatus,
+				PageSpecification.Status newPublishedLayoutStatus,
+				PageSpecification.Status oldDraftLayoutStatus,
+				PageSpecification.Status oldPublishedLayoutStatus)
+		throws Exception {
+
+		SitePage sitePage = _getRandomSitePage(SitePage.Type.CONTENT_PAGE);
+
+		ContentPageSpecification draftContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				null, oldDraftLayoutStatus);
+
+		ContentPageSpecification publishedContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				draftContentPageSpecification.getExternalReferenceCode(),
+				oldPublishedLayoutStatus);
+
+		publishedContentPageSpecification.setExternalReferenceCode(
+			sitePage.getExternalReferenceCode());
+
+		sitePage.setPageSpecifications(
+			() -> new PageSpecification[] {
+				publishedContentPageSpecification, draftContentPageSpecification
+			});
+
+		SitePageResource sitePageResource = _getSitePageResource();
+
+		SitePage postSitePage =
+			sitePageResource.postByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(), sitePage);
+
+		_assertPageSpecifications(
+			draftContentPageSpecification, publishedContentPageSpecification,
+			postSitePage);
+
+		draftContentPageSpecification.setStatus(newDraftLayoutStatus);
+		publishedContentPageSpecification.setStatus(newPublishedLayoutStatus);
+
+		_assertPageSpecifications(
+			draftContentPageSpecification, publishedContentPageSpecification,
+			sitePageResource.patchSiteSiteByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(),
+				postSitePage.getExternalReferenceCode(),
+				new SitePage() {
+					{
+						setPageSpecifications(
+							() -> new PageSpecification[] {
+								publishedContentPageSpecification,
+								draftContentPageSpecification
+							});
+					}
+				}));
+	}
+
+	private void _testPatchSiteSiteByExternalReferenceCodeSitePageWithPriority()
+		throws Exception {
+
+		_testUpdateSiteSiteByExternalReferenceCodeSitePageWithPriority(
+			(curParentSitePageExternalReferenceCode, curPriority, sitePage) -> {
+				int expectedPriority = _getExpectedPriority(
+					sitePage.getParentSitePageExternalReferenceCode(),
+					curParentSitePageExternalReferenceCode, curPriority);
+
+				sitePage.setParentSitePageExternalReferenceCode(
+					() -> curParentSitePageExternalReferenceCode);
+
+				PageSettings curPageSettings = sitePage.getPageSettings();
+
+				curPageSettings.setPriority(() -> curPriority);
+
+				SitePage patchSitePage =
+					sitePageResource.
+						patchSiteSiteByExternalReferenceCodeSitePage(
+							testGroup.getExternalReferenceCode(),
+							sitePage.getExternalReferenceCode(),
+							new SitePage() {
+								{
+									setPageSettings(() -> curPageSettings);
+									setParentSitePageExternalReferenceCode(
+										() ->
+											curParentSitePageExternalReferenceCode);
+								}
+							});
+
+				curPageSettings.setPriority(expectedPriority);
+
+				assertEquals(sitePage, patchSitePage);
+				assertValid(patchSitePage);
+
+				_assertSitePage(
+					_layoutLocalService.getLayoutByExternalReferenceCode(
+						sitePage.getExternalReferenceCode(),
+						testGroup.getGroupId()),
+					patchSitePage);
+			});
+	}
+
 	private void _testPostByExternalReferenceCodeSitePage(SitePage sitePage)
 		throws Exception {
 
@@ -887,6 +1101,78 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 			_layoutLocalService.getLayoutByExternalReferenceCode(
 				sitePage.getExternalReferenceCode(), testGroup.getGroupId()),
 			postSitePage);
+	}
+
+	private void _testPostByExternalReferenceCodeSitePageWithPageSpecifications()
+		throws Exception {
+
+		_testPostByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED);
+		_testPostByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.APPROVED, PageSpecification.Status.DRAFT);
+		_testPostByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.DRAFT, PageSpecification.Status.APPROVED);
+		_testPostByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.DRAFT, PageSpecification.Status.DRAFT);
+
+		SitePage sitePage = _getRandomSitePage(SitePage.Type.CONTENT_PAGE);
+
+		ContentPageSpecification draftContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				null, PageSpecification.Status.APPROVED);
+
+		ContentPageSpecification publishedContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				draftContentPageSpecification.getExternalReferenceCode(),
+				PageSpecification.Status.APPROVED);
+
+		sitePage.setPageSpecifications(
+			() -> new PageSpecification[] {
+				publishedContentPageSpecification, draftContentPageSpecification
+			});
+
+		_assertProblemException(
+			StringBundler.concat(
+				"Site page external reference code ",
+				sitePage.getExternalReferenceCode(),
+				" does not match published page specification external ",
+				"reference code ",
+				publishedContentPageSpecification.getExternalReferenceCode()),
+			() -> sitePageResource.postByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(), sitePage));
+	}
+
+	private void _testPostByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status draftLayoutStatus,
+			PageSpecification.Status publishedLayoutStatus)
+		throws Exception {
+
+		SitePage sitePage = _getRandomSitePage(SitePage.Type.CONTENT_PAGE);
+
+		ContentPageSpecification draftContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				null, draftLayoutStatus);
+
+		ContentPageSpecification publishedContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				draftContentPageSpecification.getExternalReferenceCode(),
+				publishedLayoutStatus);
+
+		publishedContentPageSpecification.setExternalReferenceCode(
+			sitePage.getExternalReferenceCode());
+
+		sitePage.setPageSpecifications(
+			() -> new PageSpecification[] {
+				publishedContentPageSpecification, draftContentPageSpecification
+			});
+
+		SitePageResource sitePageResource = _getSitePageResource();
+
+		_assertPageSpecifications(
+			draftContentPageSpecification, publishedContentPageSpecification,
+			sitePageResource.postByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(), sitePage));
 	}
 
 	private void _testPutSiteSiteByExternalReferenceCodeSitePage(
@@ -912,7 +1198,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				testGroup.getExternalReferenceCode(),
 				sitePage.getExternalReferenceCode(), sitePage);
 
-		equals(sitePage, putSitePage);
+		assertEquals(sitePage, putSitePage);
 		assertValid(putSitePage);
 
 		_assertSitePage(
@@ -929,6 +1215,221 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				sitePage.getUuid()));
 	}
 
+	private void _testPutSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications()
+		throws Exception {
+
+		_testPutSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED, PageSpecification.Status.DRAFT,
+			PageSpecification.Status.APPROVED);
+		_testPutSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED, PageSpecification.Status.DRAFT,
+			PageSpecification.Status.DRAFT);
+		_testPutSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.DRAFT, PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED,
+			PageSpecification.Status.APPROVED);
+		_testPutSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+			PageSpecification.Status.DRAFT, PageSpecification.Status.DRAFT,
+			PageSpecification.Status.APPROVED, PageSpecification.Status.DRAFT);
+	}
+
+	private void
+			_testPutSiteSiteByExternalReferenceCodeSitePageWithPageSpecifications(
+				PageSpecification.Status newDraftLayoutStatus,
+				PageSpecification.Status newPublishedLayoutStatus,
+				PageSpecification.Status oldDraftLayoutStatus,
+				PageSpecification.Status oldPublishedLayoutStatus)
+		throws Exception {
+
+		SitePage sitePage = _getRandomSitePage(SitePage.Type.CONTENT_PAGE);
+
+		ContentPageSpecification draftContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				null, oldDraftLayoutStatus);
+
+		ContentPageSpecification publishedContentPageSpecification =
+			PageSpecificationsTestUtil.getContentPageSpecification(
+				draftContentPageSpecification.getExternalReferenceCode(),
+				oldPublishedLayoutStatus);
+
+		publishedContentPageSpecification.setExternalReferenceCode(
+			sitePage.getExternalReferenceCode());
+
+		sitePage.setPageSpecifications(
+			() -> new PageSpecification[] {
+				publishedContentPageSpecification, draftContentPageSpecification
+			});
+
+		SitePageResource sitePageResource = _getSitePageResource();
+
+		_assertPageSpecifications(
+			draftContentPageSpecification, publishedContentPageSpecification,
+			sitePageResource.putSiteSiteByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(),
+				sitePage.getExternalReferenceCode(), sitePage));
+
+		draftContentPageSpecification.setStatus(newDraftLayoutStatus);
+		publishedContentPageSpecification.setStatus(newPublishedLayoutStatus);
+
+		_assertPageSpecifications(
+			draftContentPageSpecification, publishedContentPageSpecification,
+			sitePageResource.putSiteSiteByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(),
+				sitePage.getExternalReferenceCode(), sitePage));
+	}
+
+	private void _testPutSiteSiteByExternalReferenceCodeSitePageWithPriority()
+		throws Exception {
+
+		_testUpdateSiteSiteByExternalReferenceCodeSitePageWithPriority(
+			(parentSitePageExternalReferenceCode, priority, sitePage) -> {
+				int expectedPriority = _getExpectedPriority(
+					sitePage.getParentSitePageExternalReferenceCode(),
+					parentSitePageExternalReferenceCode, priority);
+
+				sitePage.setParentSitePageExternalReferenceCode(
+					parentSitePageExternalReferenceCode);
+
+				PageSettings pageSettings = sitePage.getPageSettings();
+
+				pageSettings.setPriority(priority);
+
+				SitePage putSitePage =
+					sitePageResource.putSiteSiteByExternalReferenceCodeSitePage(
+						testGroup.getExternalReferenceCode(),
+						sitePage.getExternalReferenceCode(), sitePage);
+
+				pageSettings.setPriority(expectedPriority);
+
+				assertEquals(sitePage, putSitePage);
+				assertValid(putSitePage);
+
+				_assertSitePage(
+					_layoutLocalService.getLayoutByExternalReferenceCode(
+						sitePage.getExternalReferenceCode(),
+						testGroup.getGroupId()),
+					putSitePage);
+			});
+	}
+
+	private void _testUpdateSiteSiteByExternalReferenceCodeSitePageWithPriority(
+			UnsafeTriConsumer<String, Integer, SitePage, Exception>
+				unsafeTriConsumer)
+		throws Exception {
+
+		Page<SitePage> page =
+			sitePageResource.getSiteSiteByExternalReferenceCodeSitePagesPage(
+				testGroup.getExternalReferenceCode(), null, null, null,
+				Pagination.of(0, 0), null);
+
+		for (SitePage sitePage : page.getItems()) {
+			if (Validator.isNotNull(
+					sitePage.getParentSitePageExternalReferenceCode())) {
+
+				continue;
+			}
+
+			sitePageResource.deleteSiteSiteByExternalReferenceCodeSitePage(
+				testGroup.getExternalReferenceCode(),
+				sitePage.getExternalReferenceCode());
+		}
+
+		_priorities.clear();
+
+		SitePage sitePage1 =
+			testPostByExternalReferenceCodeSitePage_addSitePage(
+				randomSitePage());
+		SitePage sitePage2 =
+			testPostByExternalReferenceCodeSitePage_addSitePage(
+				randomSitePage());
+		SitePage sitePage3 =
+			testPostByExternalReferenceCodeSitePage_addSitePage(
+				randomSitePage());
+		SitePage sitePage4 =
+			testPostByExternalReferenceCodeSitePage_addSitePage(
+				randomSitePage());
+		SitePage sitePage5 =
+			testPostByExternalReferenceCodeSitePage_addSitePage(
+				randomSitePage());
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 1, sitePage2);
+		_assertParentAndPriority(null, 2, sitePage3);
+		_assertParentAndPriority(null, 3, sitePage4);
+		_assertParentAndPriority(null, 4, sitePage5);
+
+		unsafeTriConsumer.accept(null, 1, sitePage4);
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 1, sitePage4);
+		_assertParentAndPriority(null, 2, sitePage2);
+		_assertParentAndPriority(null, 3, sitePage3);
+		_assertParentAndPriority(null, 4, sitePage5);
+
+		unsafeTriConsumer.accept(null, 5, sitePage5);
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 1, sitePage4);
+		_assertParentAndPriority(null, 2, sitePage2);
+		_assertParentAndPriority(null, 3, sitePage3);
+		_assertParentAndPriority(null, 4, sitePage5);
+
+		unsafeTriConsumer.accept(null, null, sitePage3);
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 1, sitePage4);
+		_assertParentAndPriority(null, 2, sitePage2);
+		_assertParentAndPriority(null, 3, sitePage5);
+		_assertParentAndPriority(null, 4, sitePage3);
+
+		unsafeTriConsumer.accept(
+			sitePage1.getExternalReferenceCode(), 2, sitePage2);
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 1, sitePage4);
+		_assertParentAndPriority(null, 3, sitePage5);
+		_assertParentAndPriority(null, 4, sitePage3);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 0, sitePage2);
+
+		unsafeTriConsumer.accept(
+			sitePage1.getExternalReferenceCode(), 1, sitePage4);
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 3, sitePage5);
+		_assertParentAndPriority(null, 4, sitePage3);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 0, sitePage2);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 1, sitePage4);
+
+		unsafeTriConsumer.accept(
+			sitePage1.getExternalReferenceCode(), 3, sitePage3);
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 3, sitePage5);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 0, sitePage2);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 1, sitePage4);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 2, sitePage3);
+
+		unsafeTriConsumer.accept(
+			sitePage1.getExternalReferenceCode(), 0, sitePage3);
+
+		_assertParentAndPriority(null, 0, sitePage1);
+		_assertParentAndPriority(null, 3, sitePage5);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 0, sitePage3);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 1, sitePage2);
+		_assertParentAndPriority(
+			sitePage1.getExternalReferenceCode(), 2, sitePage4);
+	}
+
 	private static final List<SitePage.Type> _types = Arrays.asList(
 		SitePage.Type.CONTENT_PAGE, SitePage.Type.WIDGET_PAGE);
 
@@ -937,5 +1438,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 
 	@Inject
 	private LayoutLocalService _layoutLocalService;
+
+	private final Map<String, Integer> _priorities = new HashMap<>();
 
 }

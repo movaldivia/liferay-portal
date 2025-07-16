@@ -7,6 +7,7 @@ import {expect, mergeTests} from '@playwright/test';
 
 import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
 import {loginTest} from '../../../fixtures/loginTest';
+import {clickAndExpectToBeHidden} from '../../../utils/clickAndExpectToBeHidden';
 import {clickAndExpectToBeVisible} from '../../../utils/clickAndExpectToBeVisible';
 import {getRandomInt} from '../../../utils/getRandomInt';
 import {cmsPagesTest} from './fixtures/cmsPagesTest';
@@ -24,7 +25,10 @@ test('Add a new tag', {tag: '@LPD-51250'}, async ({tagsPage}) => {
 	const tagName = await tagsPage.createTag();
 
 	const tag = tagsPage.getItem(tagName);
+
 	await expect(tag).toBeVisible();
+
+	await tagsPage.deleteTag(tagName);
 });
 
 test(
@@ -36,40 +40,52 @@ test(
 		const name1 = `Tag${getRandomInt()}`;
 		const name2 = `Tag${getRandomInt()}`;
 
-		await tagsPage.newTagButton.click();
+		await clickAndExpectToBeVisible({
+			target: page.locator('.modal-title', {
+				hasText: 'New Tag',
+			}),
+			timeout: 2000,
+			trigger: tagsPage.newTagButton,
+		});
 
 		await page.getByLabel('NameRequired').fill(name1);
 
-		await tagsPage.saveAndAddAnotherButton.click();
+		await expect(async () => {
+			await tagsPage.saveAndAddAnotherButton.click({timeout: 1000});
+
+			await expect(page.getByLabel('NameRequired')).toBeEmpty({
+				timeout: 1000,
+			});
+		}).toPass();
 
 		await page.getByLabel('NameRequired').fill(name2);
 
-		await tagsPage.saveButton.click();
+		await clickAndExpectToBeHidden({
+			target: page.locator('.modal-title', {
+				hasText: 'New Tag',
+			}),
+			timeout: 2000,
+			trigger: tagsPage.saveButton,
+		});
 
 		const tag1 = tagsPage.getItem(name1);
+
 		await expect(tag1).toBeVisible();
 
 		const tag2 = tagsPage.getItem(name2);
+
 		await expect(tag2).toBeVisible();
+
+		await tagsPage.deleteTag(name1);
+
+		await tagsPage.deleteTag(name2);
 	}
 );
 
-test('Delete a tag', {tag: '@LPD-51252'}, async ({page, tagsPage}) => {
+test('Delete a tag', {tag: '@LPD-51252'}, async ({tagsPage}) => {
 	const tagName = await tagsPage.createTag();
 
-	await tagsPage.execItemAction({
-		action: 'Delete',
-		filter: tagName,
-	});
-
-	await expect(page.getByRole('heading', {name: `Delete Tag`})).toBeVisible();
-
-	await clickAndExpectToBeVisible({
-		target: page.getByText(`Success:${tagName} was deleted successfully.`),
-		trigger: page.getByRole('button', {name: 'Delete'}),
-	});
-
-	await expect(tagsPage.getItem(tagName)).not.toBeVisible();
+	await tagsPage.deleteTag(tagName);
 });
 
 test('Edit an existing tag', {tag: '@LPD-52395'}, async ({page, tagsPage}) => {
@@ -94,7 +110,10 @@ test('Edit an existing tag', {tag: '@LPD-52395'}, async ({page, tagsPage}) => {
 	});
 
 	const tag = tagsPage.getItem(newName);
+
 	await expect(tag).toBeVisible();
+
+	await tagsPage.deleteTag(newName);
 });
 
 test(
@@ -121,6 +140,7 @@ test(
 		});
 
 		const tag = tagsPage.getItem(name);
+
 		await expect(tag).toBeVisible();
 
 		await expect(
@@ -128,6 +148,8 @@ test(
 				.locator('[data-testid="visualization-mode-table"]')
 				.getByText('Default')
 		).toBeVisible();
+
+		await tagsPage.deleteTag(name);
 	}
 );
 
@@ -165,6 +187,7 @@ test('Bulk Merge tags', {tag: '@LPD-43388'}, async ({page, tagsPage}) => {
 			.locator('tbody tr')
 			.filter({hasText: tagName1})
 	).toBeVisible();
+
 	await expect(
 		page
 			.locator('.fds table')
@@ -186,6 +209,8 @@ test('Bulk Merge tags', {tag: '@LPD-43388'}, async ({page, tagsPage}) => {
 
 	await expect(tag1).toBeVisible();
 	await expect(tag2).not.toBeVisible();
+
+	await tagsPage.deleteTag(tagName1);
 });
 
 test('Merge tags', {tag: '@LPD-43388'}, async ({page, tagsPage}) => {
@@ -198,7 +223,7 @@ test('Merge tags', {tag: '@LPD-43388'}, async ({page, tagsPage}) => {
 	await expect(tag1).toBeVisible();
 	await expect(tag2).toBeVisible();
 
-	page.reload();
+	await page.reload();
 
 	await tagsPage.execItemAction({
 		action: 'Merge',
@@ -213,7 +238,13 @@ test('Merge tags', {tag: '@LPD-43388'}, async ({page, tagsPage}) => {
 
 	await page.getByLabel('Merge Tags').getByRole('combobox').click();
 
-	await page.getByRole('option', {name: tagName2}).click();
+	await expect(async () => {
+		await page.getByRole('option', {name: tagName2}).click({timeout: 1000});
+
+		await expect(
+			page.locator('.label-secondary', {hasText: tagName2})
+		).toBeVisible({timeout: 1000});
+	}).toPass();
 
 	await clickAndExpectToBeVisible({
 		target: page.getByRole('heading', {name: 'Confirm Merge Tags'}),
@@ -229,6 +260,8 @@ test('Merge tags', {tag: '@LPD-43388'}, async ({page, tagsPage}) => {
 
 	await expect(tag1).toBeVisible();
 	await expect(tag2).not.toBeVisible();
+
+	await tagsPage.deleteTag(tagName1);
 });
 
 test(
@@ -238,6 +271,7 @@ test(
 		const name1 = await tagsPage.createTag();
 
 		const tag1 = tagsPage.getItem(name1);
+
 		await expect(tag1).toBeVisible();
 
 		await tagsPage.newTagButton.click();
@@ -249,6 +283,15 @@ test(
 				'Please enter a unique name. This one is already in use.'
 			),
 			trigger: tagsPage.saveButton,
+		});
+
+		await clickAndExpectToBeHidden({
+			target: page
+				.locator('.modal-body')
+				.getByText(
+					'Please enter a unique name. This one is already in use.'
+				),
+			trigger: page.getByText('Cancel'),
 		});
 
 		// Repeat test for attempting to edit tag since the edit and create modals are separate components
@@ -275,5 +318,18 @@ test(
 			),
 			trigger: tagsPage.saveButton,
 		});
+
+		await clickAndExpectToBeHidden({
+			target: page
+				.locator('.modal-body')
+				.getByText(
+					'Please enter a unique name. This one is already in use.'
+				),
+			trigger: page.getByText('Cancel'),
+		});
+
+		await tagsPage.deleteTag(name1);
+
+		await tagsPage.deleteTag(name2);
 	}
 );

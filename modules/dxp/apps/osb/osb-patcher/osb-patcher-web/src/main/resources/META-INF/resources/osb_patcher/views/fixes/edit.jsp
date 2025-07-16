@@ -15,12 +15,6 @@ long patcherFixId = ParamUtil.getLong(request, "patcherFixId");
 PatcherFix patcherFix = PatcherFixLocalServiceUtil.fetchPatcherFix(patcherFixId);
 %>
 
-<c:if test="<%= !windowState.equals(LiferayWindowState.POP_UP) %>">
-	<liferay-util:include page="/osb_patcher/views/toolbar.jsp" servletContext="<%= application %>">
-		<liferay-util:param name="tabs1" value="fixes" />
-	</liferay-util:include>
-</c:if>
-
 <liferay-util:include page="/osb_patcher/views/header.jsp" servletContext="<%= application %>">
 	<liferay-util:param name="title" value="edit-fix" />
 	<liferay-util:param name="mvcRenderCommandName" value="/patcher/index_fixes" />
@@ -39,10 +33,7 @@ PatcherFix patcherFix = PatcherFixLocalServiceUtil.fetchPatcherFix(patcherFixId)
 	<aui:input name="patcherFixId" type="hidden" value="<%= patcherFix.getPatcherFixId() %>" />
 
 	<aui:field-wrapper label="modified-date">
-		<fmt:formatDate
-			type="both"
-			value="<%= patcherFix.getModifiedDate() %>"
-		/>
+		<%= dateTimeFormat.format(patcherFix.getModifiedDate()) %>
 	</aui:field-wrapper>
 
 	<aui:field-wrapper label="created-by">

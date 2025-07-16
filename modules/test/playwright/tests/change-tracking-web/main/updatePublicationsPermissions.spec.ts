@@ -27,6 +27,7 @@ const actionNames = [
 ];
 
 let user;
+let ctCollection;
 
 test.beforeEach(async ({changeTrackingPage, page}) => {
 	user = await changeTrackingPage.addUserWithPublicationsUserRole();
@@ -38,6 +39,47 @@ test.beforeEach(async ({changeTrackingPage, page}) => {
 			page.getByRole('cell', {exact: true, name: actionName})
 		).toBeVisible();
 	}
+});
+
+test.afterEach(async ({apiHelpers, changeTrackingPage, page}) => {
+	try {
+		await performLogout(page);
+	}
+	finally {
+		await performLoginViaApi({page, screenName: 'test'});
+	}
+
+	await apiHelpers.headlessAdminUser.deleteUserAccount(Number(user.id));
+
+	await changeTrackingPage.gotoPublicationsPermissions();
+
+	const ownerRole = page.locator('tr').filter({hasText: 'Owner'});
+
+	for (let i = 1; i < 6; i++) {
+		const checkbox = ownerRole
+			.locator('td')
+			.nth(i)
+			.locator('.custom-control > label > .custom-control-input');
+
+		await checkbox.check();
+	}
+
+	const publicationsUserRole = page
+		.locator('tr')
+		.filter({hasText: 'Publications User'});
+
+	const publicationsUserRoleDeletePermission = publicationsUserRole
+		.locator('td')
+		.nth(1)
+		.locator('.custom-control > label > .custom-control-input');
+
+	await publicationsUserRoleDeletePermission.uncheck();
+
+	await page.getByRole('button', {name: 'Save'}).click();
+
+	await apiHelpers.headlessChangeTracking.deleteCTCollection(
+		ctCollection.body.id
+	);
 });
 
 test('LPD-53946 Update Permissions for Owner Role', async ({
@@ -78,7 +120,7 @@ test('LPD-53946 Update Permissions for Owner Role', async ({
 
 	await performLoginViaApi({page, screenName: user.alternateName});
 
-	const ctCollection =
+	ctCollection =
 		await apiHelpers.headlessChangeTracking.createCTCollection(
 			getRandomString()
 		);
@@ -93,21 +135,9 @@ test('LPD-53946 Update Permissions for Owner Role', async ({
 
 	await performLoginViaApi({page, screenName: 'test'});
 
-	await apiHelpers.headlessAdminUser.deleteUserAccount(Number(user.id));
-
 	await changeTrackingPage.goToReviewChanges(ctCollection.body.name);
 
 	await expect(publishLink).toBeVisible();
-
-	await changeTrackingPage.gotoPublicationsPermissions();
-
-	await ownerRolePublishPermission.check();
-
-	await saveButton.click();
-
-	await apiHelpers.headlessChangeTracking.deleteCTCollection(
-		ctCollection.body.id
-	);
 });
 
 test('LPD-53946 Update Permissions for Regular Role', async ({
@@ -145,7 +175,7 @@ test('LPD-53946 Update Permissions for Regular Role', async ({
 
 	await performLoginViaApi({page, screenName: user.alternateName});
 
-	const ctCollection =
+	ctCollection =
 		await apiHelpers.headlessChangeTracking.createCTCollection(
 			getRandomString()
 		);
@@ -156,32 +186,71 @@ test('LPD-53946 Update Permissions for Regular Role', async ({
 
 	await expect(page.getByRole('menuitem', {name: 'Edit'})).toBeHidden();
 
-	await page.on('dialog', (dialog) => dialog.accept());
+	page.on('dialog', (dialog) => dialog.accept());
 
 	await page.getByRole('menuitem', {name: 'Delete'}).click();
 
 	await page.reload();
 
 	await expect(page.getByText(ctCollection.body.name)).toBeHidden();
+});
 
-	await performLogout(page);
+test('LPD-57648 Filter Permission Roles with search bar', async ({page}) => {
+	const searchBar = page.getByLabel('Search');
 
-	await performLoginViaApi({page, screenName: 'test'});
+	await expect(searchBar).toBeVisible();
 
-	await apiHelpers.headlessAdminUser.deleteUserAccount(Number(user.id));
+	const searchKeyword = 'admin';
 
-	await changeTrackingPage.gotoPublicationsPermissions();
+	await searchBar.fill(searchKeyword);
 
-	for (let i = 1; i < 6; i++) {
-		const checkbox = ownerRole
-			.locator('td')
-			.nth(i)
-			.locator('.custom-control > label > .custom-control-input');
+	const submitButton = page.getByLabel('Submit');
 
-		await checkbox.check();
-	}
+	await submitButton.click();
 
-	await publicationsUserRoleDeletePermission.uncheck();
+	const resultsBar = page.locator('.results-bar');
+	let rowCount = await page.locator('.role-row').count();
 
-	await saveButton.click();
+	await expect(resultsBar).toBeVisible();
+
+	await expect(page.getByText('3 Results for admin')).toBeVisible();
+
+	expect(rowCount).toEqual(3);
+
+	const clearSearchButton = page.getByLabel('Clear');
+
+	await clearSearchButton.click();
+
+	await expect(resultsBar).toBeVisible({visible: false});
+
+	rowCount = await page.locator('.role-row').count();
+
+	expect(rowCount).toEqual(11);
+});
+
+test('LPD-57648 Show empty search results', async ({page}) => {
+	const searchBar = page.getByLabel('Search');
+
+	await expect(searchBar).toBeVisible();
+
+	const searchKeyword = getRandomString();
+
+	await searchBar.fill(searchKeyword);
+
+	const submitButton = page.getByLabel('Submit');
+
+	await submitButton.click();
+
+	const resultsBar = page.locator('.results-bar');
+	const rowCount = await page.locator('.role-row').count();
+
+	await expect(resultsBar).toBeVisible();
+
+	await expect(
+		page.getByText('0 Results for ' + searchKeyword)
+	).toBeVisible();
+
+	expect(rowCount).toEqual(0);
+
+	await expect(page.getByText('No roles were found.')).toBeVisible();
 });

@@ -8,14 +8,17 @@ package com.liferay.headless.asset.library.internal.dto.v1_0.converter;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
 import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.document.library.configuration.DLSizeLimitConfigurationProvider;
 import com.liferay.headless.asset.library.dto.v1_0.AssetLibrary;
 import com.liferay.headless.asset.library.dto.v1_0.MimeTypeLimit;
 import com.liferay.headless.asset.library.dto.v1_0.Settings;
 import com.liferay.headless.asset.library.internal.resource.v1_0.BaseAssetLibraryResourceImpl;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
@@ -25,8 +28,6 @@ import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import jakarta.ws.rs.core.UriInfo;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
@@ -118,30 +119,21 @@ public class AssetLibraryDTOConverter
 		};
 	}
 
-	private MimeTypeLimit[] _toMimeTypeLimits(
-		UnicodeProperties unicodeProperties) {
+	private MimeTypeLimit[] _getMimeTypeLimits(long groupId) {
+		Map<String, Long> groupMimeTypeSizeLimit =
+			_dlSizeLimitConfigurationProvider.getGroupMimeTypeSizeLimit(
+				groupId);
 
-		List<MimeTypeLimit> mimeTypeLimits = new ArrayList<>();
-
-		for (Map.Entry<String, String> entry : unicodeProperties.entrySet()) {
-			String key = entry.getKey();
-
-			if (!key.startsWith("mimeTypeLimit-")) {
-				continue;
-			}
-
-			mimeTypeLimits.add(
-				new MimeTypeLimit() {
-					{
-						setMaximumSize(
-							() -> GetterUtil.getInteger(entry.getValue()));
-						setMimeType(
-							() -> key.substring("mimeTypeLimit-".length()));
-					}
-				});
-		}
-
-		return mimeTypeLimits.toArray(new MimeTypeLimit[0]);
+		return TransformUtil.transformToArray(
+			groupMimeTypeSizeLimit.entrySet(),
+			entry -> new MimeTypeLimit() {
+				{
+					setMaximumSize(
+						() -> GetterUtil.getInteger(entry.getValue()));
+					setMimeType(entry::getKey);
+				}
+			},
+			MimeTypeLimit.class);
 	}
 
 	private Settings _toSettings(Group group) {
@@ -152,18 +144,22 @@ public class AssetLibraryDTOConverter
 				setAutoTaggingEnabled(
 					() -> GetterUtil.getBoolean(
 						unicodeProperties.get("autoTaggingEnabled")));
-				setAvailableLanguageIds(group::getAvailableLanguageIds);
-				setDefaultLanguageId(group::getDefaultLanguageId);
+				setAvailableLanguageIds(
+					() -> GetterUtil.getStringValues(
+						StringUtil.split(unicodeProperties.get("locales"))));
+				setDefaultLanguageId(
+					() -> GetterUtil.getString(
+						unicodeProperties.get("languageId")));
 				setLogoColor(
 					() -> GetterUtil.get(
 						unicodeProperties.get("logoColor"), "outline-0"));
-				setMimeTypeLimits(() -> _toMimeTypeLimits(unicodeProperties));
+				setMimeTypeLimits(() -> _getMimeTypeLimits(group.getGroupId()));
 				setSharingEnabled(
 					() -> GetterUtil.getBoolean(
 						unicodeProperties.get("sharingEnabled")));
 				setUseCustomLanguages(
-					() -> GetterUtil.getBoolean(
-						unicodeProperties.get("useCustomLanguages")));
+					() -> !GetterUtil.getBoolean(
+						unicodeProperties.get("inheritLocales")));
 			}
 		};
 	}
@@ -173,6 +169,9 @@ public class AssetLibraryDTOConverter
 
 	@Reference
 	private DepotEntryLocalService _depotEntryLocalService;
+
+	@Reference
+	private DLSizeLimitConfigurationProvider _dlSizeLimitConfigurationProvider;
 
 	@Reference
 	private UserGroupLocalService _userGroupLocalService;

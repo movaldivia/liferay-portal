@@ -31,6 +31,7 @@ PatcherFixPacksDisplayContext patcherFixPacksDisplayContext = new PatcherFixPack
 		<portlet:renderURL var="viewPatcherFixPackURL">
 			<portlet:param name="mvcRenderCommandName" value="/patcher/view_fix_packs" />
 			<portlet:param name="patcherFixPackId" value="<%= String.valueOf(patcherFixPack.getPatcherFixPackId()) %>" />
+			<portlet:param name="redirect" value="<%= currentURL %>" />
 		</portlet:renderURL>
 
 		<liferay-ui:search-container-column-text
@@ -72,13 +73,10 @@ PatcherFixPacksDisplayContext patcherFixPacksDisplayContext = new PatcherFixPack
 			value="<%= LanguageUtil.get(request, PatcherBuildUtil.getQAStatusLabel(patcherFixPack.getPatcherBuildId())) %>"
 		/>
 
-		<liferay-ui:search-container-column-text
+		<liferay-ui:search-container-column-date
 			name="released-date"
-		>
-			<fmt:formatDate
-				value="<%= patcherFixPack.getReleasedDate() %>"
-			/>
-		</liferay-ui:search-container-column-text>
+			value="<%= patcherFixPack.getReleasedDate() %>"
+		/>
 
 		<%
 		List<String> newTickets = PatcherUtil.getNewTickets(patcherFixPack);
@@ -112,6 +110,7 @@ PatcherFixPacksDisplayContext patcherFixPacksDisplayContext = new PatcherFixPack
 					<portlet:renderURL var="editPatcherFixPackURL">
 						<portlet:param name="mvcRenderCommandName" value="/patcher/edit_fix_packs" />
 						<portlet:param name="patcherFixPackId" value="<%= String.valueOf(patcherFixPack.getPatcherFixPackId()) %>" />
+						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:renderURL>
 
 					<liferay-ui:icon
@@ -128,6 +127,7 @@ PatcherFixPacksDisplayContext patcherFixPacksDisplayContext = new PatcherFixPack
 				<c:if test="<%= (patcherBuild != null) && (patcherBuild.getStatus() == WorkflowConstants.STATUS_BUILD_COMPLETE) %>">
 					<portlet:actionURL name="/patcher/test_builds" var="testPatcherFixPackURL">
 						<portlet:param name="patcherFixPackId" value="<%= String.valueOf(patcherFixPack.getPatcherFixPackId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_STARTED) %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 

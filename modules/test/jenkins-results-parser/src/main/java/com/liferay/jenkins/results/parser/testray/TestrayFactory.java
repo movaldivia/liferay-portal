@@ -38,6 +38,14 @@ public class TestrayFactory {
 
 	public static TestrayCaseResult newBuildTestrayCaseResult(
 		TestrayBuild testrayBuild, TopLevelBuildReport topLevelBuildReport,
+		AxisTestClassGroup axisTestClassGroup) {
+
+		return newBuildTestrayCaseResult(
+			testrayBuild, topLevelBuildReport, axisTestClassGroup, null, null);
+	}
+
+	public static TestrayCaseResult newBuildTestrayCaseResult(
+		TestrayBuild testrayBuild, TopLevelBuildReport topLevelBuildReport,
 		AxisTestClassGroup axisTestClassGroup, TestClass testClass) {
 
 		return newBuildTestrayCaseResult(
@@ -71,7 +79,7 @@ public class TestrayFactory {
 			else if (axisTestClassGroup instanceof JSUnitAxisTestClassGroup) {
 				return new JSUnitBatchBuildTestrayCaseResult(
 					testrayBuild, topLevelBuildReport, axisTestClassGroup,
-					testClassMethod);
+					testClass);
 			}
 			else if (axisTestClassGroup instanceof JUnitAxisTestClassGroup) {
 				return new JUnitBatchBuildTestrayCaseResult(
@@ -193,6 +201,10 @@ public class TestrayFactory {
 		TestrayServer testrayServer, JSONObject jsonObject) {
 
 		return new TestrayBuild(testrayServer, jsonObject);
+	}
+
+	public static TestrayBuild newTestrayBuild(URL url) {
+		return new TestrayBuild(url);
 	}
 
 	public static TestrayCase newTestrayCase(

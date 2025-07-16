@@ -31,6 +31,7 @@ export const test = mergeTests(
 	accountSettingsPagesTest,
 	dataApiHelpersTest,
 	featureFlagsTest({
+		'LPD-47858': {enabled: true},
 		'LPS-178052': {enabled: true},
 	}),
 	isolatedSiteTest,
@@ -698,5 +699,143 @@ test(
 		await productMenuPage.configurationButton.click();
 
 		await expect(productMenuPage.siteSettingsButton).not.toBeVisible();
+	}
+);
+
+test(
+	'Can assign an organization to a user',
+	{tag: '@LPD-59030'},
+	async ({apiHelpers, editUserPage, usersAndOrganizationsPage}) => {
+		const organization =
+			await apiHelpers.headlessAdminUser.postOrganization();
+		const user = await apiHelpers.headlessAdminUser.postUserAccount();
+
+		await usersAndOrganizationsPage.goto();
+
+		await (
+			await usersAndOrganizationsPage.usersTableRowLink(
+				user.alternateName
+			)
+		).click();
+
+		await expect(editUserPage.membershipsLink).toBeVisible();
+		await expect(editUserPage.organizationsLink).toBeVisible();
+
+		await editUserPage.organizationsLink.click();
+
+		await editUserPage.selectOrganizationsButton.click();
+
+		await expect(
+			editUserPage.selectOrganizationsTable.cell('Approved')
+		).toBeVisible();
+
+		await (
+			await editUserPage.selectOrganizationsTable.rowCheckbox(
+				organization.name
+			)
+		).check();
+		await editUserPage.selectOrganizationsAddButton.click();
+
+		await expect(
+			editUserPage.organizationsTable.getByText(organization.name)
+		).toBeVisible();
+		await expect(
+			editUserPage.organizationsTable.getByText('Approved')
+		).toBeVisible();
+	}
+);
+
+test(
+	'Can add different roles to a user and view their status',
+	{tag: ['@LPD-59032']},
+	async ({apiHelpers, editUserPage, site, usersAndOrganizationsPage}) => {
+		const user = await apiHelpers.headlessAdminUser.postUserAccount();
+
+		const organization =
+			await apiHelpers.headlessAdminUser.postOrganization({
+				name: 'Organization' + getRandomInt(),
+			});
+
+		await apiHelpers.headlessAdminUser.assignUserToOrganizationByEmailAddress(
+			organization.id,
+			user.emailAddress
+		);
+
+		apiHelpers.data.push({
+			id: `${organization.id}_${user.emailAddress}`,
+			type: 'organizationUserAccountAssociation',
+		});
+
+		await apiHelpers.jsonWebServicesUser.assignUsersToSite(
+			site.id,
+			user.id
+		);
+
+		await usersAndOrganizationsPage.goToUsers();
+		await (
+			await usersAndOrganizationsPage.usersTableRowLink(
+				user.alternateName
+			)
+		).click();
+
+		await expect(editUserPage.rolesLink).toBeVisible();
+
+		await editUserPage.rolesLink.click();
+		await editUserPage.selectRegularRolesButton.click();
+
+		await expect(editUserPage.selectRegularRolesSearchInput).toBeEnabled();
+		await expect(
+			editUserPage.selectRegularRolesTable.cell('Approved')
+		).toBeVisible();
+
+		await editUserPage
+			.selectRegularRolesChooseButton('Administrator')
+			.click();
+		await editUserPage.selectOrganizationRolesButton.click();
+
+		await expect(
+			editUserPage.selectOrganizationRolesSearchBar
+		).toBeEnabled();
+		await expect(
+			(
+				await editUserPage.selectOrganizationRolesTableRow(
+					0,
+					'Organization Owner'
+				)
+			).row.getByText('Approved')
+		).toBeVisible();
+
+		await (
+			await editUserPage.selectOrganizationRolesChooseButton(
+				'Organization Owner'
+			)
+		).click();
+		await editUserPage.selectSiteRolesButton.click();
+
+		await expect(editUserPage.selectSiteRolesSearchBar).toBeEnabled();
+		await expect(
+			(
+				await editUserPage.selectSiteRolesTableRow(0, 'Site Owner')
+			).row.getByText('Approved')
+		).toBeVisible();
+
+		await (
+			await editUserPage.selectSiteRolesChooseButton('Site Owner')
+		).click();
+		await editUserPage.saveButton.click();
+
+		await expect(
+			(await editUserPage.regularRolesTable.firstRow()).getByText(
+				'Approved'
+			)
+		).toBeVisible();
+		await expect(
+			(await editUserPage.organizationRolesTable.firstRow()).getByText(
+				'Approved'
+			)
+		).toBeVisible();
+		await expect(
+			(await editUserPage.siteRolesTable.firstRow()).getByText('Approved')
+		).toBeVisible();
 	}
 );

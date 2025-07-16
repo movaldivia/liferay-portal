@@ -700,12 +700,6 @@ public class PropsValues {
 		GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.DL_FILE_ENTRY_PREVIEW_VIDEO_WIDTH));
 
-	public static final String[]
-		DL_FILE_ENTRY_RAW_METADATA_PROCESSOR_EXCLUDED_MIME_TYPES =
-			PropsUtil.getArray(
-				PropsKeys.
-					DL_FILE_ENTRY_RAW_METADATA_PROCESSOR_EXCLUDED_MIME_TYPES);
-
 	public static final int DL_FILE_ENTRY_THUMBNAIL_CUSTOM_1_MAX_HEIGHT =
 		GetterUtil.getInteger(
 			PropsUtil.get(
@@ -2400,6 +2394,13 @@ public class PropsValues {
 		GetterUtil.getBoolean(
 			PropsUtil.get(
 				PropsKeys.UPGRADE_DATABASE_DL_STORAGE_CHECK_DISABLED));
+
+	public static final boolean
+		UPGRADE_DATABASE_PREUPGRADE_DATA_CLEANUP_ENABLED =
+			GetterUtil.getBoolean(
+				PropsUtil.get(
+					PropsKeys.
+						UPGRADE_DATABASE_PREUPGRADE_DATA_CLEANUP_ENABLED));
 
 	public static final boolean UPGRADE_DATABASE_PREUPGRADE_VERIFY_ENABLED =
 		GetterUtil.getBoolean(

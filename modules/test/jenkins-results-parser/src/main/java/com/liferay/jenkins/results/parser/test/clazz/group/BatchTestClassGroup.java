@@ -212,7 +212,9 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		List<DownstreamBuildReport> cachedDownstreamBuildReports =
 			new ArrayList<>();
 
-		if (!JenkinsResultsParserUtil.isCloudCINode()) {
+		if (!JenkinsResultsParserUtil.isBuildCachingEnabled() ||
+			!JenkinsResultsParserUtil.isCloudCINode()) {
+
 			return cachedDownstreamBuildReports;
 		}
 
@@ -240,6 +242,8 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 			"cached-build-report-files/" + getBatchName());
 
 		if (!baseDir.exists()) {
+			baseDir.mkdirs();
+
 			sb.append("/");
 
 			Workspace workspace = workspaces.get(0);

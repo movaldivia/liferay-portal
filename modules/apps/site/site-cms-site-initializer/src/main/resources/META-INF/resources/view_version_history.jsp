@@ -14,8 +14,8 @@ ViewVersionHistoryDisplayContext viewVersionHistoryDisplayContext = (ViewVersion
 <div>
 	<div>
 		<react:component
-			module="{BackButtonManagementBar} from site-cms-site-initializer"
-			props="<%= viewVersionHistoryDisplayContext.getBackButtonReactData() %>"
+			module="{Toolbar} from site-cms-site-initializer"
+			props="<%= viewVersionHistoryDisplayContext.getToolbarReactData() %>"
 		/>
 	</div>
 
@@ -25,6 +25,7 @@ ViewVersionHistoryDisplayContext viewVersionHistoryDisplayContext = (ViewVersion
 		formName="fm"
 		id="<%= CMSSiteInitializerFDSNames.VIEW_HISTORY %>"
 		itemsPerPage="<%= 20 %>"
+		propsTransformer="{ViewVersionHistoryFDSPropsTransformer} from site-cms-site-initializer"
 		style="fluid"
 	/>
 </div>

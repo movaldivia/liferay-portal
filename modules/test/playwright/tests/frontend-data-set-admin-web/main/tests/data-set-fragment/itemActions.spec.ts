@@ -390,6 +390,12 @@ test.describe('Item Actions in Data Set fragment', () => {
 			await expect(
 				(await itemAction.getAttribute('href')).valueOf()
 			).toContain(`/detail/${itemId}`);
+
+			await itemAction.click();
+
+			await page.getByText('Not Found').isVisible();
+
+			await dataSetFragmentPage.goToPage({layout});
 		});
 
 		await test.step('Change visualization mode to List', async () => {

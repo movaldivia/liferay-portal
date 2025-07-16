@@ -132,9 +132,24 @@ public class MarketplaceRestController extends BaseRestController {
 		);
 	}
 
-	@GetMapping("projects/kpi")
+	@GetMapping("kpi")
 	public String getProjectsKPI() {
-		return _projectsKPI;
+		return _marketplaceKPIJSONObject.toString();
+	}
+
+	@PostMapping("kpi")
+	public void postKPI(
+		@AuthenticationPrincipal Jwt jwt, @RequestBody String json) {
+
+		if (_log.isInfoEnabled()) {
+			_log.info("POST projects KPI " + json);
+		}
+
+		JSONObject jsonObject = new JSONObject(json);
+
+		for (String key : jsonObject.keySet()) {
+			_marketplaceKPIJSONObject.put(key, jsonObject.get(key));
+		}
 	}
 
 	@PostMapping("product/purchase")
@@ -266,17 +281,6 @@ public class MarketplaceRestController extends BaseRestController {
 			).build());
 	}
 
-	@PostMapping("projects/kpi")
-	public void postProjectsKPI(
-		@AuthenticationPrincipal Jwt jwt, @RequestBody String json) {
-
-		if (_log.isInfoEnabled()) {
-			_log.info("POST projects KPI " + json);
-		}
-
-		_projectsKPI = json;
-	}
-
 	private void _setUpCloudProductPurchase(
 			Order order, Page<OrderItem> orderItemPage)
 		throws Exception {
@@ -360,9 +364,9 @@ public class MarketplaceRestController extends BaseRestController {
 	@Autowired
 	private KoroneikiService _koroneikiService;
 
+	private final JSONObject _marketplaceKPIJSONObject = new JSONObject();
+
 	@Autowired
 	private MarketplaceService _marketplaceService;
-
-	private String _projectsKPI;
 
 }

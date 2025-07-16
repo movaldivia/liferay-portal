@@ -64,6 +64,15 @@ public abstract class BaseTopLevelBuild
 	extends BaseParentBuild implements TopLevelBuild {
 
 	@Override
+	public void addTestrayAttachmentURL(URL testrayAttachmentURL) {
+		if (_testrayAttachmentURLs.contains(testrayAttachmentURL)) {
+			return;
+		}
+
+		_testrayAttachmentURLs.add(testrayAttachmentURL);
+	}
+
+	@Override
 	public void addTimelineData(TimelineData timelineData) {
 		timelineData.addTimelineData(this);
 
@@ -581,6 +590,11 @@ public abstract class BaseTopLevelBuild
 	}
 
 	@Override
+	public synchronized List<URL> getTestrayAttachmentURLs() {
+		return _testrayAttachmentURLs;
+	}
+
+	@Override
 	public JSONObject getTestReportJSONObject(boolean cache) {
 		return null;
 	}
@@ -602,7 +616,7 @@ public abstract class BaseTopLevelBuild
 
 	@Override
 	public TopLevelBuildReport getTopLevelBuildReport() {
-		return BuildReportFactory.newTopLevelBuildReport(this);
+		return _topLevelBuildReport;
 	}
 
 	public URL getUserContentURL() {
@@ -844,6 +858,8 @@ public abstract class BaseTopLevelBuild
 
 	protected BaseTopLevelBuild(String url, TopLevelBuild topLevelBuild) {
 		super(url, topLevelBuild);
+
+		_topLevelBuildReport = BuildReportFactory.newTopLevelBuildReport(this);
 
 		Properties buildProperties = null;
 
@@ -2479,5 +2495,7 @@ public abstract class BaseTopLevelBuild
 	private String _metricsHostName;
 	private int _metricsHostPort;
 	private final boolean _sendBuildMetrics;
+	private final List<URL> _testrayAttachmentURLs = new ArrayList<>();
+	private final TopLevelBuildReport _topLevelBuildReport;
 
 }

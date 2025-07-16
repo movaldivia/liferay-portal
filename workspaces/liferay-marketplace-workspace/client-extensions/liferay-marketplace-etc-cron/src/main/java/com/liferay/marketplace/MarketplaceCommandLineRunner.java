@@ -7,8 +7,6 @@ package com.liferay.marketplace;
 
 import com.liferay.client.extension.util.spring.boot3.BaseRestController;
 import com.liferay.client.extension.util.spring.boot3.client.LiferayOAuth2AccessTokenManager;
-import com.liferay.headless.admin.user.client.custom.field.CustomField;
-import com.liferay.headless.admin.user.client.custom.field.CustomValue;
 import com.liferay.headless.admin.user.client.dto.v1_0.UserAccount;
 import com.liferay.headless.admin.user.client.dto.v1_0.UserGroup;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
@@ -17,6 +15,7 @@ import com.liferay.headless.commerce.admin.order.client.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.client.pagination.Page;
 import com.liferay.headless.commerce.admin.order.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderResource;
+import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -60,7 +59,32 @@ public class MarketplaceCommandLineRunner
 
 		_processPendingOrders();
 
-		_processMarketplaceProjects();
+		_processOrdersTotalAmount();
+
+		_processProjectsUsingMarketplaceApps();
+	}
+
+	private void _forEachOrder(
+			String filterString,
+			UnsafeConsumer<Order, Exception> unsafeConsumer)
+		throws Exception {
+
+		for (int i = 1;; i++) {
+			Page<Order> page = _getOrdersPage(filterString, i, 200);
+
+			for (Order order : page.getItems()) {
+				try {
+					unsafeConsumer.accept(order);
+				}
+				catch (Exception exception) {
+					_log.error(exception);
+				}
+			}
+
+			if (i > page.getLastPage()) {
+				break;
+			}
+		}
 	}
 
 	private JSONObject _getAvailabilityJSONObject() {
@@ -72,6 +96,29 @@ public class MarketplaceCommandLineRunner
 					_liferayMarketplaceEtcSpringBootURL + "/trial/availability"
 				).build(
 				).toUri()));
+	}
+
+	private JSONArray _getContactTeamsJSONArray(String emailAddress) {
+		try {
+			JSONObject jsonObject = new JSONObject(
+				get(
+					_liferayOAuth2AccessTokenManager.getAuthorization(
+						_liferayOAuthApplicationExternalReferenceCodes),
+					UriComponentsBuilder.fromUriString(
+						_liferayMarketplaceEtcSpringBootURL +
+							"/koroneiki/contact/by-email-address/" +
+								emailAddress
+					).build(
+					).toUri()));
+
+			return jsonObject.getJSONArray("teams");
+		}
+		catch (Exception exception) {
+			_log.error(
+				"Unable to find contact teams for " + emailAddress, exception);
+
+			return new JSONArray();
+		}
 	}
 
 	private Collection<UserAccount> _getCustomerUserAccounts()
@@ -103,6 +150,49 @@ public class MarketplaceCommandLineRunner
 		return userAccountPage.getItems();
 	}
 
+	private String _getKoroneikiProject(Order order) {
+		JSONArray jsonArray = new JSONArray();
+
+		JSONArray contactTeamsJSONArray = _getContactTeamsJSONArray(
+			order.getCreatorEmailAddress());
+
+		for (int i = 0; i < contactTeamsJSONArray.length(); i++) {
+			String accountExternalReferenceCode =
+				order.getAccountExternalReferenceCode();
+
+			JSONObject contactTeamJSONObject =
+				contactTeamsJSONArray.getJSONObject(i);
+
+			JSONObject jsonObject = new JSONObject(
+			).put(
+				"key", contactTeamJSONObject.getString("key")
+			).put(
+				"name", contactTeamJSONObject.getString("name")
+			);
+
+			if (accountExternalReferenceCode.startsWith("KOR-")) {
+				if (Objects.equals(
+						accountExternalReferenceCode,
+						contactTeamJSONObject.getString("key"))) {
+
+					jsonArray.put(jsonObject);
+
+					break;
+				}
+
+				continue;
+			}
+
+			jsonArray.put(jsonObject);
+		}
+
+		if (jsonArray.isEmpty()) {
+			return null;
+		}
+
+		return jsonArray.toString();
+	}
+
 	private OrderResource _getOrderResource() throws Exception {
 		return OrderResource.builder(
 		).endpoint(
@@ -124,6 +214,18 @@ public class MarketplaceCommandLineRunner
 
 		return orderResource.getOrdersPage(
 			"", filterString, Pagination.of(page, pageSize), "");
+	}
+
+	private UserAccount _getUserAccount(
+		String emailAddress, Collection<UserAccount> userAccounts) {
+
+		for (UserAccount userAccount : userAccounts) {
+			if (Objects.equals(emailAddress, userAccount.getEmailAddress())) {
+				return userAccount;
+			}
+		}
+
+		return null;
 	}
 
 	private UserAccountResource _getUserAccountResource() throws Exception {
@@ -150,13 +252,22 @@ public class MarketplaceCommandLineRunner
 		).build();
 	}
 
+	private void _postKPI(String data) {
+		post(
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				_liferayOAuthApplicationExternalReferenceCodes),
+			data,
+			UriComponentsBuilder.fromUriString(
+				_liferayMarketplaceEtcSpringBootURL + "/marketplace/kpi"
+			).build(
+			).toUri());
+	}
+
 	private void _postTrialExpire(long orderId) throws Exception {
 		post(
-			null,
-			Collections.singletonMap(
-				HttpHeaders.AUTHORIZATION,
-				_liferayOAuth2AccessTokenManager.getAuthorization(
-					_liferayOAuthApplicationExternalReferenceCodes)),
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				_liferayOAuthApplicationExternalReferenceCodes),
+			"",
 			UriComponentsBuilder.fromUriString(
 				_liferayMarketplaceEtcSpringBootURL + "/trial/expire/" + orderId
 			).build(
@@ -165,11 +276,9 @@ public class MarketplaceCommandLineRunner
 
 	private void _postTrialNotifyEnd(long orderId) throws Exception {
 		post(
-			null,
-			Collections.singletonMap(
-				HttpHeaders.AUTHORIZATION,
-				_liferayOAuth2AccessTokenManager.getAuthorization(
-					_liferayOAuthApplicationExternalReferenceCodes)),
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				_liferayOAuthApplicationExternalReferenceCodes),
+			"",
 			UriComponentsBuilder.fromUriString(
 				_liferayMarketplaceEtcSpringBootURL + "/trial/notify-end/" +
 					orderId
@@ -179,6 +288,8 @@ public class MarketplaceCommandLineRunner
 
 	private void _postTrialProvisioning(Order order) throws Exception {
 		post(
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				_liferayOAuthApplicationExternalReferenceCodes),
 			new JSONObject(
 			).put(
 				"classPK", order.getId()
@@ -189,10 +300,6 @@ public class MarketplaceCommandLineRunner
 					"accountId", String.valueOf(order.getAccountId())
 				)
 			).toString(),
-			Collections.singletonMap(
-				HttpHeaders.AUTHORIZATION,
-				_liferayOAuth2AccessTokenManager.getAuthorization(
-					_liferayOAuthApplicationExternalReferenceCodes)),
 			UriComponentsBuilder.fromUriString(
 				_liferayMarketplaceEtcSpringBootURL + "/trial/provisioning"
 			).build(
@@ -257,114 +364,6 @@ public class MarketplaceCommandLineRunner
 		}
 	}
 
-	private void _processMarketplaceProjects() throws Exception {
-		Map<String, UserAccount> customerUserAccounts = new HashMap<>();
-		String filterString = StringBundler.concat(
-			"createDate gt ",
-			LocalDate.of(
-				2025, 1, 1
-			).atStartOfDay(
-				ZoneOffset.UTC
-			),
-			"and (not contains(creatorEmailAddress, '@liferay.com')) and ",
-			"orderTypeExternalReferenceCode ne 'SOLUTIONS7'");
-		Collection<UserAccount> userAccounts = _getCustomerUserAccounts();
-
-		for (int i = 1;; i++) {
-			Page<Order> page = _getOrdersPage(filterString, i, 200);
-
-			for (Order order : page.getItems()) {
-				String creatorEmailAddress = order.getCreatorEmailAddress();
-
-				if (customerUserAccounts.containsKey(creatorEmailAddress)) {
-					continue;
-				}
-
-				for (UserAccount userAccount : userAccounts) {
-					if (Objects.equals(
-							creatorEmailAddress,
-							userAccount.getEmailAddress())) {
-
-						customerUserAccounts.put(
-							creatorEmailAddress, userAccount);
-
-						break;
-					}
-				}
-			}
-
-			if (i > page.getLastPage()) {
-				break;
-			}
-		}
-
-		JSONArray jsonArray = new JSONArray();
-
-		for (UserAccount userAccount : customerUserAccounts.values()) {
-			for (CustomField customField : userAccount.getCustomFields()) {
-				if (!Objects.equals(
-						customField.getName(), "customer-project")) {
-
-					continue;
-				}
-
-				CustomValue customValue = customField.getCustomValue();
-
-				if (Validator.isNull(customValue.getData())) {
-					JSONObject jsonObject = new JSONObject(
-						get(
-							_liferayOAuth2AccessTokenManager.getAuthorization(
-								_liferayOAuthApplicationExternalReferenceCodes),
-							UriComponentsBuilder.fromUriString(
-								_liferayMarketplaceEtcSpringBootURL +
-									"/koroneiki/contact/by-email-address/" +
-										userAccount.getEmailAddress()
-							).build(
-							).toUri()));
-
-					customValue.setData(
-						String.valueOf(
-							jsonObject.getJSONArray(
-								"teams"
-							).get(
-								0
-							)));
-
-					UserAccountResource userAccountResource =
-						_getUserAccountResource();
-
-					userAccountResource.patchUserAccount(
-						userAccount.getId(), userAccount);
-				}
-
-				jsonArray.put(
-					new JSONObject(
-					).put(
-						"customer-project",
-						new JSONObject(String.valueOf(customValue.getData()))
-					).put(
-						"emailAddress", userAccount.getEmailAddress()
-					));
-			}
-		}
-
-		post(
-			_liferayOAuth2AccessTokenManager.getAuthorization(
-				_liferayOAuthApplicationExternalReferenceCodes),
-			jsonArray.toString(),
-			UriComponentsBuilder.fromUriString(
-				_liferayMarketplaceEtcSpringBootURL +
-					"/marketplace/projects/kpi"
-			).build(
-			).toUri());
-
-		if (_log.isInfoEnabled()) {
-			_log.info(
-				"There are " + customerUserAccounts.size() +
-					" projects with Marketplace apps");
-		}
-	}
-
 	private void _processOnHoldTrials() throws Exception {
 		Page<Order> page = _getOrdersPage(
 			"orderStatus/any(x:(x eq " + _ORDER_STATUS_ON_HOLD +
@@ -419,6 +418,34 @@ public class MarketplaceCommandLineRunner
 		}
 	}
 
+	private void _processOrdersTotalAmount() throws Exception {
+		_forEachOrder(
+			StringBundler.concat(
+				"orderStatus/any(x:(x eq ", _ORDER_STATUS_COMPLETED,
+				")) and orderTypeExternalReferenceCode eq 'DXPAPP'"),
+			order -> {
+				String currencyCode = order.getCurrencyCode();
+
+				if (!_totalAmount.containsKey(currencyCode)) {
+					_totalAmount.put(currencyCode, 0D);
+				}
+
+				_totalAmount.put(
+					currencyCode,
+					_totalAmount.get(currencyCode) + order.getTotalAmount());
+			});
+
+		if (_log.isInfoEnabled()) {
+			_log.info("Orders total amount " + _totalAmount);
+		}
+
+		_postKPI(
+			new JSONObject(
+			).put(
+				"totalAmount", _totalAmount
+			).toString());
+	}
+
 	private void _processPendingOrders() throws Exception {
 		Page<Order> page = _getOrdersPage(
 			"orderStatus/any(x:(x eq " + _ORDER_STATUS_PENDING +
@@ -451,6 +478,106 @@ public class MarketplaceCommandLineRunner
 			_updateOrder(order.getId(), _ORDER_STATUS_PROCESSING);
 
 			_updateOrder(order.getId(), _ORDER_STATUS_COMPLETED);
+		}
+	}
+
+	private void _processProjectsUsingMarketplaceApps() throws Exception {
+		Map<String, JSONObject> projectsUsingMarketplace = new HashMap<>();
+
+		OrderResource orderResource = _getOrderResource();
+		Collection<UserAccount> userAccounts = _getCustomerUserAccounts();
+
+		_forEachOrder(
+			StringBundler.concat(
+				"createDate gt ",
+				LocalDate.of(
+					2025, 1, 1
+				).atStartOfDay(
+					ZoneOffset.UTC
+				),
+				" and (not contains(creatorEmailAddress, '@liferay.com')) and ",
+				"orderTypeExternalReferenceCode ne 'SOLUTIONS7'"),
+			order -> {
+				String accountExternalReferenceCode =
+					order.getAccountExternalReferenceCode();
+
+				Map<String, String> customFields =
+					(Map<String, String>)order.getCustomFields();
+
+				String koroneikiProject = customFields.get("koroneiki-project");
+
+				if (Validator.isNull(koroneikiProject)) {
+					if (!accountExternalReferenceCode.startsWith("KOR-") ||
+						Validator.isNull(
+							_getUserAccount(
+								order.getCreatorEmailAddress(),
+								userAccounts))) {
+
+						return;
+					}
+
+					koroneikiProject = _getKoroneikiProject(order);
+
+					if (Validator.isNull(koroneikiProject)) {
+						return;
+					}
+
+					customFields.put("koroneiki-project", koroneikiProject);
+
+					orderResource.patchOrder(order.getId(), order);
+				}
+
+				JSONObject jsonObject = new JSONArray(
+					koroneikiProject
+				).getJSONObject(
+					0
+				);
+
+				String key = jsonObject.getString("key");
+
+				if (!projectsUsingMarketplace.containsKey(key)) {
+					projectsUsingMarketplace.put(
+						key,
+						new JSONObject(
+						).put(
+							"accountName", jsonObject.getString("name")
+						).put(
+							"orders", new JSONArray()
+						));
+				}
+
+				projectsUsingMarketplace.get(
+					key
+				).getJSONArray(
+					"orders"
+				).put(
+					new JSONObject(
+					).put(
+						"accountExternalReferenceCode",
+						accountExternalReferenceCode
+					).put(
+						"creatorEmailAddress", order.getCreatorEmailAddress()
+					).put(
+						"id", order.getId()
+					).put(
+						"orderTypeExternalReferenceCode",
+						order.getOrderTypeExternalReferenceCode()
+					).put(
+						"projects", new JSONArray(koroneikiProject)
+					)
+				);
+			});
+
+		_postKPI(
+			new JSONObject(
+			).put(
+				"projectsUsingMarketplace", projectsUsingMarketplace
+			).toString());
+
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				"There are " + projectsUsingMarketplace.size() +
+					" projects with Marketplace apps");
 		}
 	}
 
@@ -491,5 +618,7 @@ public class MarketplaceCommandLineRunner
 
 	@Value("${com.liferay.lxc.dxp.server.protocol}")
 	private String _lxcDXPServerProtocol;
+
+	private final Map<String, Double> _totalAmount = new HashMap<>();
 
 }

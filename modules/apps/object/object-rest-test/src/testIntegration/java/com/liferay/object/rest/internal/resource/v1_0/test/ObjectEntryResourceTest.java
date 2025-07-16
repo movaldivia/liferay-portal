@@ -5127,8 +5127,8 @@ public class ObjectEntryResourceTest {
 		// One to many relationship
 
 		_objectRelationship1 = _addObjectRelationshipAndRelateObjectEntries(
-			_objectDefinition1, _userSystemObjectDefinition,
-			_objectEntry1.getPrimaryKey(), _userAccountJSONObject.getLong("id"),
+			_userSystemObjectDefinition, _objectDefinition1,
+			_userAccountJSONObject.getLong("id"), _objectEntry1.getPrimaryKey(),
 			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
 
 		_testFilterObjectEntriesByRelatedSystemObjectEntriesFields(
@@ -5136,6 +5136,21 @@ public class ObjectEntryResourceTest {
 				String.format(
 					"%s/%s eq '%s'", _objectRelationship1.getName(),
 					_OBJECT_FIELD_NAME_2, _OBJECT_FIELD_VALUE_2)),
+			_objectDefinition1);
+
+		String objectRelationshipERCObjectFieldName =
+			ObjectFieldSettingUtil.getValue(
+				ObjectFieldSettingConstants.
+					NAME_OBJECT_RELATIONSHIP_ERC_OBJECT_FIELD_NAME,
+				_objectFieldLocalService.getObjectField(
+					_objectRelationship1.getObjectFieldId2()));
+
+		_assertFilterString(
+			_OBJECT_FIELD_NAME_1, _OBJECT_FIELD_VALUE_1,
+			_escape(
+				String.format(
+					"%s eq '%s'", objectRelationshipERCObjectFieldName,
+					_userAccountJSONObject.getString("externalReferenceCode"))),
 			_objectDefinition1);
 	}
 
@@ -9356,6 +9371,9 @@ public class ObjectEntryResourceTest {
 			_objectDefinition1, _objectDefinition2, TestPropsValues.getUserId(),
 			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
 
+		ObjectField objectField = _objectFieldLocalService.fetchObjectField(
+			_objectRelationship1.getObjectFieldId2());
+
 		JSONObject objectEntryJSONObject = JSONUtil.put(
 			_OBJECT_FIELD_NAME_2, _OBJECT_FIELD_VALUE_2
 		).put(
@@ -9391,6 +9409,10 @@ public class ObjectEntryResourceTest {
 		JSONAssert.assertEquals(
 			JSONUtil.put(
 				"status", "NOT_FOUND"
+			).put(
+				"title",
+				String.format(
+					"The value for %s does not exist.", objectField.getName())
 			).toString(),
 			HTTPTestUtil.invokeToJSONObject(
 				objectEntryJSONObject.toString(),
@@ -9404,6 +9426,9 @@ public class ObjectEntryResourceTest {
 				TestPropsValues.getUserId(),
 				ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
 
+		objectField = _objectFieldLocalService.fetchObjectField(
+			objectRelationship.getObjectFieldId2());
+
 		objectEntryJSONObject = JSONUtil.put(
 			_OBJECT_FIELD_NAME_2, _OBJECT_FIELD_VALUE_2
 		).put(
@@ -9416,6 +9441,10 @@ public class ObjectEntryResourceTest {
 		JSONAssert.assertEquals(
 			JSONUtil.put(
 				"status", "NOT_FOUND"
+			).put(
+				"title",
+				String.format(
+					"The value for %s does not exist.", objectField.getName())
 			).toString(),
 			HTTPTestUtil.invokeToJSONObject(
 				objectEntryJSONObject.toString(),
@@ -14521,7 +14550,9 @@ public class ObjectEntryResourceTest {
 						"&download=true&objectDefinitionExternalReferenceCode=",
 						objectDefinition.getExternalReferenceCode(),
 						"&objectEntryExternalReferenceCode=",
-						objectEntry.getExternalReferenceCode()));
+						objectEntry.getExternalReferenceCode(),
+						"&previewCTCollectionId=",
+						dlFileEntry.getCtCollectionId()));
 
 				link.setLabel(fileEntry.getName());
 

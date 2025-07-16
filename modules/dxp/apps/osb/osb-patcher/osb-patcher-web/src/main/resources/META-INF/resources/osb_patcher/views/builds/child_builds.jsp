@@ -23,27 +23,16 @@ List<PatcherBuild> childPatcherBuilds = PatcherBuildRelUtil.getChildPatcherBuild
 		results="<%= childPatcherBuilds %>"
 	/>
 
-	<%
-	int resultsTotal = childPatcherBuilds.size();
-	%>
-
-	<%@ include file="/osb_patcher/views/show_results_count.jspf" %>
-
 	<liferay-ui:search-container-row
 		className="com.liferay.osb.patcher.model.PatcherBuild"
 		escapedModel="<%= true %>"
 		keyProperty="patcherBuildId"
 		modelVar="childPatcherBuild"
 	>
-		<portlet:renderURL var="viewChildPatcherBuildsURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
-			<portlet:param name="mvcRenderCommandName" value="/patcher/view_child_builds_builds" />
-			<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
-		</portlet:renderURL>
-
 		<portlet:renderURL var="viewPatcherBuildURL">
 			<portlet:param name="mvcRenderCommandName" value="/patcher/view_builds" />
 			<portlet:param name="patcherBuildId" value="<%= String.valueOf(childPatcherBuild.getPatcherBuildId()) %>" />
-			<portlet:param name="redirect" value="<%= viewChildPatcherBuildsURL %>" />
+			<portlet:param name="redirect" value="<%= currentURL %>" />
 		</portlet:renderURL>
 
 		<liferay-ui:search-container-column-text
@@ -103,8 +92,8 @@ List<PatcherBuild> childPatcherBuilds = PatcherBuildRelUtil.getChildPatcherBuild
 				<clay:link
 					cssClass="nobr"
 					href='<%= jenkinsResult.get("statusURL") %>'
+					label='<%= jenkinsResult.get("jobName") %>'
 					target="_blank"
-					title='<%= jenkinsResult.get("jobName") %>'
 				/>
 
 			<%
@@ -112,10 +101,6 @@ List<PatcherBuild> childPatcherBuilds = PatcherBuildRelUtil.getChildPatcherBuild
 			%>
 
 		</liferay-ui:search-container-column-text>
-
-		<%
-		PatcherFix patcherFix = PatcherFixLocalServiceUtil.getPatcherFix(childPatcherBuild.getPatcherFixId());
-		%>
 
 		<liferay-ui:search-container-column-text
 			align="right"
@@ -148,8 +133,6 @@ List<PatcherBuild> childPatcherBuilds = PatcherBuildRelUtil.getChildPatcherBuild
 		markupView="lexicon"
 		paginate="<%= false %>"
 	/>
-
-	<%@ include file="/osb_patcher/views/show_results_count.jspf" %>
 </liferay-ui:search-container>
 
 <aui:script>

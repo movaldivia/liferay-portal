@@ -36,7 +36,13 @@ import {
 	getLocalizedValue,
 } from '../../utils/getLocalizedValue';
 import {getInputRendererById} from '../../utils/renderer';
-import {IItemsActions, ITableSchema, TSort} from '../../utils/types';
+import {
+	ESelectionTrigger,
+	IItemsActions,
+	ITableSchema,
+	IView,
+	TSort,
+} from '../../utils/types';
 import ViewsContext, {
 	IViewsContext,
 	TViewsContextDispatch,
@@ -112,6 +118,7 @@ const Head = ({
 							<ClayTableCell
 								key="select"
 								scope="col"
+								textValue="select-item"
 								width="51px"
 							>
 								{null}
@@ -126,6 +133,7 @@ const Head = ({
 						columnName={field.fieldName}
 						key={field.fieldName}
 						sortable={(field as any).sortable}
+						textValue="select"
 					>
 						{(field as any).label}
 					</HeadCellResizer>
@@ -143,6 +151,7 @@ const Row = ({
 	itemsActions,
 	onItemSelectionChange,
 	selectionType,
+	...otherProps
 }: {
 	active: boolean;
 	columns: Array<Field>;
@@ -163,9 +172,11 @@ const Row = ({
 
 	return (
 		<ClayTableRowOptionalDropTarget
+			{...otherProps}
 			className={classNames({'table-active': active})}
 			item={item}
 			items={columns}
+			onItemSelectionChange={onItemSelectionChange}
 		>
 			{(cell: Column) => {
 				const cellColumnName = getCellColumnClassName(cell.fieldName);
@@ -191,6 +202,9 @@ const Row = ({
 											}
 											itemData={item}
 											itemId={id}
+											onItemSelectionChange={
+												onItemSelectionChange
+											}
 										/>
 									)
 								)}
@@ -208,7 +222,11 @@ const Row = ({
 									<SelectionComponent
 										checked={active}
 										onChange={() =>
-											onItemSelectionChange(item)
+											onItemSelectionChange({
+												item,
+												trigger:
+													ESelectionTrigger.INPUT,
+											})
 										}
 										title={Liferay.Language.get(
 											'select-item'
@@ -370,13 +388,36 @@ function ClayTableRowOptionalDropTarget({
 	className,
 	item,
 	items,
-}: React.ComponentProps<typeof ClayTableRow<Column>> & {item: any}) {
+	onItemSelectionChange,
+	...otherProps
+}: React.ComponentProps<typeof ClayTableRow<Column>> & {
+	item: any;
+	onItemSelectionChange: Function;
+}) {
+	const [viewsContext] = useContext(ViewsContext);
+
 	const {className: dropClassName, dropRef} = useFDSDrop({item});
+
+	const activeView: IView = viewsContext.activeView;
+
+	const props = {
+		...otherProps,
+		className: classNames(className, dropClassName),
+		items,
+		onClick: () => {
+			onItemSelectionChange({
+				item,
+				trigger: ESelectionTrigger.CONTAINER,
+			});
+		},
+	};
 
 	return (
 		<ClayTableRow
-			className={classNames(className, dropClassName)}
-			items={items}
+			{...{
+				...props,
+				...(activeView.setItemComponentProps?.({item, props}) ?? {}),
+			}}
 			ref={dropRef}
 		>
 			{children}
@@ -567,8 +608,13 @@ function CellRenderer({
 	const [{modifiedFields}] = useContext(ViewsContext) as any;
 
 	const cellRenderer = useMemo(() => {
-		if (field.contentRendererClientExtension) {
-			const mergedField = {...field, ...modifiedFields[field.fieldName]};
+		const modifiedField = modifiedFields[field.fieldName];
+
+		if (
+			field.contentRendererClientExtension &&
+			!modifiedField.clientExtensionResolutionError
+		) {
+			const mergedField = {...field, ...modifiedField};
 
 			return {
 				htmlElementBuilder: mergedField.htmlElementBuilder,

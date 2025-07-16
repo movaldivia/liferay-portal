@@ -252,6 +252,15 @@ public class ObjectEntryVersionLocalServiceUtil {
 			userId, objectEntryVersion);
 	}
 
+	public static void expireObjectEntryVersions(
+			long userId, com.liferay.object.model.ObjectEntry objectEntry,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws Exception {
+
+		getService().expireObjectEntryVersions(
+			userId, objectEntry, serviceContext);
+	}
+
 	public static ObjectEntryVersion fetchObjectEntryVersion(
 		long objectEntryVersionId) {
 
@@ -388,6 +397,13 @@ public class ObjectEntryVersionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPersistedModel(primaryKeyObj);
+	}
+
+	public static boolean isLatestObjectEntryVersion(
+			long objectEntryId, int version)
+		throws PortalException {
+
+		return getService().isLatestObjectEntryVersion(objectEntryId, version);
 	}
 
 	public static ObjectEntryVersion updateLatestObjectEntryVersion(

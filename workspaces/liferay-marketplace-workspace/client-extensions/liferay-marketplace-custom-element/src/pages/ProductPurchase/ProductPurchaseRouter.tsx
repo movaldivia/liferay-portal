@@ -19,7 +19,6 @@ import {
 	getProductCategoriesByVocabularyName,
 	getProductPriceModel,
 	getProductSpecification,
-	isCloudProduct,
 } from '../../utils/productUtils';
 import ProductPurchaseOutlet from './ProductPurchaseOutlet';
 import ProductPurchaseAccountSelection from './pages/AccountSelection';
@@ -29,7 +28,6 @@ import ContactSalesPage from './pages/App/InsuficientResources/ContactSales';
 import ContactSalesForm from './pages/App/InsuficientResources/ContactSalesForm';
 import License from './pages/App/License';
 import PaymentMethod from './pages/App/PaymentMethod';
-import ProjectSelection from './pages/App/Project';
 import NextSteps from './pages/NextSteps';
 import SolutionProvisioningForm from './pages/Solution';
 
@@ -45,13 +43,6 @@ export const productTypeRoutes = {
 				element: AppAccountSelection,
 				index: true,
 				title: i18n.translate('account'),
-			},
-			{
-				element: ProjectSelection,
-				path: 'project',
-				stepVisible: (product: DeliveryProduct) =>
-					isCloudProduct(product),
-				title: i18n.translate('project'),
 			},
 			{
 				element: License,

@@ -12,6 +12,7 @@ export class EditUserPage {
 	readonly accountsLink: Locator;
 	readonly appsLink: Locator;
 	readonly backLink: Locator;
+	readonly birthdayInput: Locator;
 	readonly cancelButton: Locator;
 	readonly changeImageButton: Locator;
 	readonly clearImageButton: Locator;
@@ -42,6 +43,14 @@ export class EditUserPage {
 		strictEqual?: boolean
 	) => Promise<{column: Locator; row: Locator}>;
 	readonly membershipsUserGroupsTable: Locator;
+	readonly myOrganizationsSelectOrganizationButton: Locator;
+	readonly myOrganizationsSelectOrganizationsTable: Locator;
+	readonly myOrganizationsSelectOrganizationsTableRow: (
+		colPosition: number,
+		value: string,
+		strictEqual?: boolean
+	) => Promise<{column: Locator; row: Locator}>;
+	readonly organizationRolesTable: DataTablePage;
 	readonly organizationsLink: Locator;
 	readonly organizationsTable: Locator;
 	readonly page: Page;
@@ -52,13 +61,17 @@ export class EditUserPage {
 	readonly profileAndDashboardLink: Locator;
 	readonly regularRoleCell: (name: string) => Locator;
 	readonly regularRoleCellButton: (name: string) => Locator;
+	readonly regularRolesTable: DataTablePage;
 	readonly rolesLink: Locator;
 	readonly saveButton: Locator;
 	readonly screenNameError: Locator;
 	readonly screenNameInput: Locator;
 	readonly selectAccountsButton: Locator;
-	readonly selectOrganizationButton: Locator;
+
 	readonly selectOrganizationRolesButton: Locator;
+	readonly selectOrganizationRolesChooseButton: (
+		name: string
+	) => Promise<Locator>;
 	readonly selectOrganizationRolesFrame: FrameLocator;
 	readonly selectOrganizationRolesFrameCell: (name: string) => Locator;
 	readonly selectOrganizationRolesTable: Locator;
@@ -69,17 +82,19 @@ export class EditUserPage {
 	) => Promise<{column: Locator; row: Locator}>;
 	readonly selectOrganizationRolesSearchBar: Locator;
 	readonly selectOrganizationRolesSearchBarButton: Locator;
-	readonly selectOrganizationsTable: Locator;
-	readonly selectOrganizationsTableRow: (
-		colPosition: number,
-		value: string,
-		strictEqual?: boolean
-	) => Promise<{column: Locator; row: Locator}>;
+	readonly selectOrganizationsAddButton: Locator;
+	readonly selectOrganizationsButton: Locator;
+	readonly selectOrganizationsFrame: FrameLocator;
+	readonly selectOrganizationsTable: DataTablePage;
+
 	readonly selectRegularRolesButton: Locator;
 	readonly selectRegularRolesChooseButton: (name: string) => Locator;
 	readonly selectRegularRolesFrame: FrameLocator;
+	readonly selectRegularRolesFrameCloseButton: Locator;
 	readonly selectRegularRolesSearchInput: Locator;
+	readonly selectRegularRolesTable: DataTablePage;
 	readonly selectSiteRolesButton: Locator;
+	readonly selectSiteRolesChooseButton: (name: string) => Promise<Locator>;
 	readonly selectSiteRolesFrame: FrameLocator;
 	readonly selectSiteRolesTable: Locator;
 	readonly selectSiteRolesTableRow: (
@@ -101,6 +116,7 @@ export class EditUserPage {
 	readonly selectUserGroupTable: DataTablePage;
 	readonly selectUserGroupsButton: Locator;
 	readonly selectUserLanguage: Locator;
+	readonly siteRolesTable: DataTablePage;
 	readonly tagCheckbox: (tagName: string) => Locator;
 	readonly tagInput: (name: string) => Locator;
 	readonly tagsFrame: FrameLocator;
@@ -119,6 +135,9 @@ export class EditUserPage {
 			exact: true,
 			name: 'Apps',
 		});
+		this.birthdayInput = page.locator(
+			'#_com_liferay_users_admin_web_portlet_UsersAdminPortlet_birthday'
+		);
 		this.backLink = page
 			.getByRole('link', {exact: true, name: 'Back'})
 			.or(page.getByRole('link', {name: 'Return to Full Page'}));
@@ -212,6 +231,34 @@ export class EditUserPage {
 			exact: true,
 			name: 'Memberships',
 		});
+		this.myOrganizationsSelectOrganizationButton = page.locator(
+			'#_com_liferay_users_admin_web_portlet_MyOrganizationsPortlet_selectOrganizationLink'
+		);
+		this.myOrganizationsSelectOrganizationsTable = page
+			.frameLocator(
+				'#_com_liferay_users_admin_web_portlet_MyOrganizationsPortlet_selectOrganization_iframe_'
+			)
+			.locator(
+				'#_com_liferay_item_selector_web_portlet_ItemSelectorPortlet_entriesSearchContainer'
+			);
+		this.myOrganizationsSelectOrganizationsTableRow = async (
+			colPosition: number,
+			value: string,
+			strictEqual: boolean
+		) => {
+			return await searchTableRowByValue(
+				this.myOrganizationsSelectOrganizationsTable,
+				colPosition,
+				value,
+				strictEqual
+			);
+		};
+		this.organizationRolesTable = new DataTablePage(
+			page,
+			page.locator(
+				'#_com_liferay_users_admin_web_portlet_UsersAdminPortlet_organizationRolesSearchContainer'
+			)
+		);
 		this.organizationsLink = page.getByRole('link', {
 			exact: true,
 			name: 'Organizations',
@@ -238,6 +285,12 @@ export class EditUserPage {
 		this.regularRoleCell = (name) => page.getByRole('cell', {name});
 		this.regularRoleCellButton = (name) =>
 			this.regularRoleCell(name).locator('..').getByRole('button');
+		this.regularRolesTable = new DataTablePage(
+			page,
+			page.locator(
+				'#_com_liferay_users_admin_web_portlet_UsersAdminPortlet_rolesSearchContainer'
+			)
+		);
 		this.rolesLink = page.getByRole('link', {
 			exact: true,
 			name: 'Roles',
@@ -248,20 +301,35 @@ export class EditUserPage {
 		);
 		this.screenNameInput = page.getByLabel('Screen Name');
 		this.selectAccountsButton = page.getByLabel('Select Accounts');
-		this.selectOrganizationButton = page.locator(
-			'#_com_liferay_users_admin_web_portlet_MyOrganizationsPortlet_selectOrganizationLink'
-		);
 		this.selectOrganizationRolesButton = page.locator(
 			'#_com_liferay_users_admin_web_portlet_UsersAdminPortlet_selectOrganizationRoleLink'
 		);
+		this.selectOrganizationRolesChooseButton = async (name: string) => {
+			const selectOrganizationRolesTableRow =
+				await this.selectOrganizationRolesTableRow(0, name);
+
+			if (
+				selectOrganizationRolesTableRow &&
+				selectOrganizationRolesTableRow.row
+			) {
+				return selectOrganizationRolesTableRow.row.getByRole('button', {
+					name: 'Choose',
+				});
+			}
+		};
 		this.selectOrganizationRolesFrame = page.frameLocator(
 			'iframe[title="Select Organization Role"]'
 		);
 		this.selectOrganizationRolesFrameCell = (name) =>
 			this.selectOrganizationRolesFrame.getByRole('cell', {name});
-		this.selectOrganizationRolesTable =
-			this.selectOrganizationRolesFrame.locator(
+		this.selectOrganizationRolesTable = this.selectOrganizationRolesFrame
+			.locator(
 				'#_com_liferay_roles_admin_web_portlet_RolesAdminPortlet_organizationsSearchContainer'
+			)
+			.or(
+				this.selectOrganizationRolesFrame.locator(
+					'#_com_liferay_roles_admin_web_portlet_RolesAdminPortlet_rolesSearchContainer'
+				)
 			);
 		this.selectOrganizationRolesTableRow = async (
 			colPosition: number,
@@ -281,38 +349,54 @@ export class EditUserPage {
 			this.selectOrganizationRolesFrame.getByRole('button', {
 				name: 'Search for',
 			});
-		this.selectOrganizationsTable = page
-			.frameLocator(
-				'#_com_liferay_users_admin_web_portlet_MyOrganizationsPortlet_selectOrganization_iframe_'
-			)
-			.locator(
+		this.selectOrganizationsAddButton = page.getByRole('button', {
+			name: 'Add',
+		});
+		this.selectOrganizationsButton = page.getByLabel(
+			'Select Organizations'
+		);
+		this.selectOrganizationsFrame = page.frameLocator(
+			'iframe[title="Select Organization"]'
+		);
+
+		this.selectOrganizationsTable = new DataTablePage(
+			this.selectOrganizationsFrame,
+			this.selectOrganizationsFrame.locator(
 				'#_com_liferay_item_selector_web_portlet_ItemSelectorPortlet_entriesSearchContainer'
-			);
-		this.selectOrganizationsTableRow = async (
-			colPosition: number,
-			value: string,
-			strictEqual: boolean
-		) => {
-			return await searchTableRowByValue(
-				this.selectOrganizationsTable,
-				colPosition,
-				value,
-				strictEqual
-			);
-		};
+			)
+		);
 		this.selectRegularRolesButton = page.getByLabel('Select Regular Roles');
 		this.selectRegularRolesChooseButton = (name) =>
 			this.selectRegularRolesFrame.getByLabel(`Choose ${name}`);
 		this.selectRegularRolesFrame = page.frameLocator(
 			'iframe[title="Select Regular Role"]'
 		);
+		this.selectRegularRolesFrameCloseButton = page.getByLabel('close');
 		this.selectRegularRolesSearchInput =
 			this.selectRegularRolesFrame.getByPlaceholder('Search for', {
 				exact: true,
 			});
+		this.selectRegularRolesTable = new DataTablePage(
+			this.selectRegularRolesFrame,
+			this.selectRegularRolesFrame.locator(
+				'#_com_liferay_roles_admin_web_portlet_RolesAdminPortlet_rolesSearchContainer'
+			)
+		);
 		this.selectSiteRolesButton = page.locator(
 			'#_com_liferay_users_admin_web_portlet_UsersAdminPortlet_selectSiteRoleLink'
 		);
+		this.selectSiteRolesChooseButton = async (name: string) => {
+			const selectSiterolesTableRow = await this.selectSiteRolesTableRow(
+				0,
+				name
+			);
+
+			if (selectSiterolesTableRow && selectSiterolesTableRow.row) {
+				return selectSiterolesTableRow.row.getByRole('button', {
+					name: 'Choose',
+				});
+			}
+		};
 		this.selectSiteRolesFrame = page.frameLocator(
 			'iframe[title="Select Site Role"]'
 		);
@@ -385,6 +469,12 @@ export class EditUserPage {
 		);
 		this.selectUserGroupsButton = page.getByLabel('Select User Groups');
 		this.selectUserLanguage = page.getByLabel('Language');
+		this.siteRolesTable = new DataTablePage(
+			page,
+			page.locator(
+				'#_com_liferay_users_admin_web_portlet_UsersAdminPortlet_siteRolesSearchContainer'
+			)
+		);
 		this.tagCheckbox = (tagName) => this.tagsFrame.getByLabel(tagName);
 		this.tagInput = (name) => page.getByRole('row', {name});
 		this.tagsFrame = page.frameLocator(`iframe[title="Tags"]`);

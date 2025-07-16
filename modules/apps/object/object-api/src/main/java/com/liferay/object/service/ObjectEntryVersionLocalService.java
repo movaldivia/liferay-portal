@@ -218,6 +218,10 @@ public interface ObjectEntryVersionLocalService
 			long userId, ObjectEntryVersion objectEntryVersion)
 		throws PortalException;
 
+	public void expireObjectEntryVersions(
+			long userId, ObjectEntry objectEntry, ServiceContext serviceContext)
+		throws Exception;
+
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectEntryVersion fetchObjectEntryVersion(
 		long objectEntryVersionId);
@@ -317,6 +321,10 @@ public interface ObjectEntryVersionLocalService
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public boolean isLatestObjectEntryVersion(long objectEntryId, int version)
 		throws PortalException;
 
 	public ObjectEntryVersion updateLatestObjectEntryVersion(

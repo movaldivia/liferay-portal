@@ -456,6 +456,14 @@ public class ObjectFieldLocalServiceImpl
 	}
 
 	@Override
+	public List<ObjectField> getLocalizedObjectFields(
+		long objectDefinitionId, boolean system) {
+
+		return objectFieldPersistence.findByODI_L_S(
+			objectDefinitionId, true, system);
+	}
+
+	@Override
 	public ObjectField getObjectField(long objectDefinitionId, String name)
 		throws PortalException {
 
@@ -578,7 +586,9 @@ public class ObjectFieldLocalServiceImpl
 		}
 
 		if (objectField.isLocalized()) {
-			if (objectDefinition.isUnmodifiableSystemObject()) {
+			if (objectDefinition.isUnmodifiableSystemObject() &&
+				objectField.isSystem()) {
+
 				return systemObjectDefinitionManager.getLocalizationTable();
 			}
 
@@ -774,16 +784,6 @@ public class ObjectFieldLocalServiceImpl
 		if (StringUtil.equals(
 				businessType,
 				ObjectFieldConstants.BUSINESS_TYPE_RELATIONSHIP)) {
-
-			ObjectRelationship objectRelationship =
-				_objectRelationshipPersistence.fetchByObjectFieldId2(
-					oldObjectField.getObjectFieldId());
-
-			if ((objectRelationship != null) && objectRelationship.isEdge() &&
-				!required) {
-
-				throw new ObjectFieldRequiredException();
-			}
 
 			_validateObjectRelationshipDeletionType(
 				oldObjectField.getObjectFieldId(), required);

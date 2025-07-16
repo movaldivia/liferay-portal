@@ -23,6 +23,80 @@ export const test = mergeTests(
 	objectPagesTest
 );
 
+test('can add and remove new object fields from object view while maintaining correct logic order', async ({
+	apiHelpers,
+	editObjectViewPage,
+	objectViewPage,
+	page,
+}) => {
+	const listTypeDefinition =
+		await apiHelpers.listTypeAdmin.postRandomListTypeDefinition();
+
+	apiHelpers.data.push({
+		id: listTypeDefinition.id,
+		type: 'listTypeDefinition',
+	});
+
+	const objectDefinition =
+		await apiHelpers.objectAdmin.postRandomObjectDefinition({
+			objectFields: [
+				{
+					DBType: 'String',
+					businessType: 'MultiselectPicklist',
+					externalReferenceCode: 'customPicklist',
+					indexed: true,
+					indexedAsKeyword: false,
+					indexedLanguageId: 'en_US',
+					label: {
+						en_US: 'customPicklist',
+					},
+					listTypeDefinitionExternalReferenceCode:
+						listTypeDefinition.externalReferenceCode,
+					name: 'customPicklist',
+					required: false,
+					state: false,
+				},
+			],
+			status: {code: 0},
+		});
+
+	apiHelpers.data.push({id: objectDefinition.id, type: 'objectDefinition'});
+
+	const objectViewName = getRandomString();
+
+	await objectViewPage.goto(objectDefinition.label['en_US']);
+
+	await objectViewPage.createObjectView(objectViewName);
+
+	await page.getByRole('link', {name: objectViewName}).click();
+
+	await editObjectViewPage.selectObjectFields(['Status', 'Create Date']);
+
+	const objectFields = editObjectViewPage.sidePanel.locator(
+		'li[draggable="true"]'
+	);
+
+	await expect(objectFields).toHaveCount(2);
+
+	await expect(objectFields.nth(0)).toContainText('Status');
+
+	await expect(objectFields.nth(1)).toContainText('Create Date');
+
+	await editObjectViewPage.selectObjectFields(['ID', 'customPicklist']);
+
+	await editObjectViewPage.unselectObjectFields(['Status', 'ID']);
+
+	await editObjectViewPage.selectObjectFields(['External Reference Code']);
+
+	await expect(objectFields).toHaveCount(3);
+
+	await expect(objectFields.nth(0)).toContainText('Create Date');
+
+	await expect(objectFields.nth(1)).toContainText('customPicklist');
+
+	await expect(objectFields.nth(2)).toContainText('External Reference Code');
+});
+
 test('can create an object custom view using object relationship entry', async ({
 	apiHelpers,
 	editObjectViewPage,
@@ -31,13 +105,11 @@ test('can create an object custom view using object relationship entry', async (
 }) => {
 	const objectDefinition1 =
 		await apiHelpers.objectAdmin.postRandomObjectDefinition({
-			objectFolderExternalReferenceCode: 'default',
 			status: {code: 0},
 		});
 
 	const objectDefinition2 =
 		await apiHelpers.objectAdmin.postRandomObjectDefinition({
-			objectFolderExternalReferenceCode: 'default',
 			status: {code: 0},
 		});
 	apiHelpers.data.push({id: objectDefinition1.id, type: 'objectDefinition'});
@@ -142,7 +214,6 @@ test('cannot create an object custom view using empty multiselectpicklist entry'
 					state: false,
 				},
 			],
-			objectFolderExternalReferenceCode: 'default',
 			status: {code: 0},
 		});
 

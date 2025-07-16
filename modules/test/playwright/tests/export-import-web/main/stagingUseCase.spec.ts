@@ -16,10 +16,12 @@ import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
 import {loginTest} from '../../../fixtures/loginTest';
 import {pageEditorPagesTest} from '../../../fixtures/pageEditorPagesTest';
 import {pageViewModePagesTest} from '../../../fixtures/pageViewModePagesTest';
+import {systemSettingsPageTest} from '../../../fixtures/systemSettingsPageTest';
 import {uiElementsPageTest} from '../../../fixtures/uiElementsTest';
 import {webContentDisplayPageTest} from '../../../fixtures/webContentDisplayPageTest';
 import getRandomString from '../../../utils/getRandomString';
 import getBasicWebContentStructureId from '../../../utils/structured-content/getBasicWebContentStructureId';
+import {journalPagesTest} from '../../journal-web/main/fixtures/journalPagesTest';
 import {exportImportConfig} from './export_import.config';
 import {exportPageTest} from './fixtures/exportPageTest';
 import {stagingConfigurationPageTest} from './fixtures/stagingConfigurationPageTest';
@@ -37,10 +39,12 @@ export const test = mergeTests(
 	collectionsPagesTest,
 	displayPageTemplatesPagesTest,
 	exportPageTest,
+	journalPagesTest,
 	pageEditorPagesTest,
 	pageViewModePagesTest,
 	stagingConfigurationPageTest,
 	stagingPageTest,
+	systemSettingsPageTest,
 	webContentDisplayPageTest,
 	uiElementsPageTest
 );
@@ -247,6 +251,61 @@ test(
 		);
 
 		expect(hasFolder).toEqual(false);
+	}
+);
+
+test(
+	'Cannot publish if linked file does not exist',
+	{tag: '@LPS-84223'},
+	async ({
+		apiHelpers,
+		journalEditArticlePage,
+		page,
+		webContentDisplayPage,
+	}) => {
+		const site = await apiHelpers.headlessSite.createSite({
+			name: getRandomString(),
+		});
+
+		apiHelpers.data.push({id: site.id, type: 'site'});
+
+		const document = await apiHelpers.headlessDelivery.postDocument(
+			site.id,
+			createReadStream(
+				path.join(__dirname, '/dependencies/Document.jpg')
+			),
+			{
+				fileName: 'Document.jpg',
+				title: 'Document.jpg',
+			}
+		);
+
+		const correctUrl = `http://localhost:8080/documents/d${site.friendlyUrlPath}/${document.friendlyUrlPath}`;
+
+		const webContentContent = `<a href="${correctUrl}">Document</a>`;
+		const webcontentTitle = getRandomString();
+
+		await apiHelpers.jsonWebServicesJournal.addWebContent({
+			content: webContentContent,
+			ddmStructureId: await getBasicWebContentStructureId(apiHelpers),
+			groupId: site.id,
+			titleMap: {en_US: webcontentTitle},
+		});
+
+		await webContentDisplayPage.gotoWebContentAdmin(site.name);
+		await page.getByRole('link', {name: webcontentTitle}).click();
+
+		await journalEditArticlePage.editURL(
+			'Document',
+			correctUrl.replace('-jpg', '_11-jpg')
+		);
+		await journalEditArticlePage.publishArticle(true);
+
+		expect(
+			await page.getByText(
+				'Close Error: Unable to validate referenced document because it cannot be found with the following parameters'
+			)
+		).toBeVisible();
 	}
 );
 

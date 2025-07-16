@@ -17,7 +17,14 @@ import ImageRenderer from '../../cell_renderers/ImageRenderer';
 import FDSDndProvider from '../../dnd/FDSDndProvider';
 import useFDSDrop from '../../dnd/useFDSDrop';
 import {getLocalizedValue} from '../../utils/getLocalizedValue';
-import {IHeader, IListSchema, IListTitleRenderer} from '../../utils/types';
+import {
+	ESelectionTrigger,
+	IHeader,
+	IListSchema,
+	IListTitleRenderer,
+	IView,
+} from '../../utils/types';
+import ViewsContext from '../ViewsContext';
 
 const Title = ({
 	item,
@@ -50,19 +57,28 @@ const ListItem = forwardRef<HTMLLIElement, any>(
 		{
 			className,
 			item,
+			onItemSelectionChange,
 			schema,
-		}: {className: string; item: any; schema: IListSchema},
+		}: {
+			className: string;
+			item: any;
+			onItemSelectionChange: Function;
+			schema: IListSchema;
+		},
 		ref
 	) => {
 		const {
 			itemsActions,
 			onSelect,
-			selectItems,
 			selectable,
 			selectedItemsKey,
 			selectedItemsValue,
 			selectionType,
 		} = useContext(FrontendDataSetContext);
+
+		const [viewsContext] = useContext(ViewsContext);
+
+		const activeView: IView = viewsContext.activeView;
 
 		const {description, image, sticker, symbol, title, titleRenderer} =
 			schema;
@@ -72,18 +88,19 @@ const ListItem = forwardRef<HTMLLIElement, any>(
 
 		const itemId = item[selectedItemsKey || 'id'];
 
+		const props = {
+			className: classNames(className, {
+				active: selectedItemsValue?.includes(itemId),
+			}),
+			flex: true,
+		};
+
 		return (
 			<ClayList.Item
-				className={classNames(className, {
-					active: selectedItemsValue?.includes(itemId),
-				})}
-				flex
-				onClick={() => {
-					if (selectable) {
-						selectItems(itemId);
-
-						onSelect?.({selectedItems: [item]});
-					}
+				{...{
+					...props,
+					...(activeView.setItemComponentProps?.({item, props}) ??
+						{}),
 				}}
 				ref={ref}
 			>
@@ -97,7 +114,14 @@ const ListItem = forwardRef<HTMLLIElement, any>(
 											.includes(String(itemId))
 									: false
 							}
-							onChange={() => {}}
+							onChange={() => {
+								onItemSelectionChange({
+									item,
+									trigger: ESelectionTrigger.INPUT,
+								});
+
+								onSelect?.({selectedItems: [item]});
+							}}
 							value={itemId}
 						/>
 					</ClayList.ItemField>
@@ -123,7 +147,20 @@ const ListItem = forwardRef<HTMLLIElement, any>(
 					)
 				)}
 
-				<ClayList.ItemField className="justify-content-center" expand>
+				<ClayList.ItemField
+					className="justify-content-center"
+					expand
+					onClick={() => {
+						if (selectable) {
+							onItemSelectionChange({
+								item,
+								trigger: ESelectionTrigger.CONTAINER,
+							});
+
+							onSelect?.({selectedItems: [item]});
+						}
+					}}
+				>
 					<Title
 						item={item}
 						title={title}
@@ -143,6 +180,7 @@ const ListItem = forwardRef<HTMLLIElement, any>(
 							actions={itemsActions || item.actionDropdownItems}
 							itemData={item}
 							itemId={itemId}
+							onItemSelectionChange={onItemSelectionChange}
 						/>
 					)}
 				</ClayList.ItemField>
@@ -153,9 +191,11 @@ const ListItem = forwardRef<HTMLLIElement, any>(
 
 const ListItemOptionalDropTarget = ({
 	item,
+	onItemSelectionChange,
 	schema,
 }: {
 	item: any;
+	onItemSelectionChange: Function;
 	schema: IListSchema;
 }) => {
 	const {className, dropRef} = useFDSDrop({item});
@@ -164,6 +204,7 @@ const ListItemOptionalDropTarget = ({
 		<ListItem
 			className={className}
 			item={item}
+			onItemSelectionChange={onItemSelectionChange}
 			ref={dropRef}
 			schema={schema}
 		/>
@@ -173,10 +214,12 @@ const ListItemOptionalDropTarget = ({
 const List = ({
 	header,
 	items,
+	onItemSelectionChange,
 	schema,
 }: {
 	header: IHeader;
 	items: any[];
+	onItemSelectionChange: Function;
 	schema: IListSchema;
 }) => {
 	const {selectedItemsKey} = useContext(FrontendDataSetContext);
@@ -207,6 +250,7 @@ const List = ({
 									? item[selectedItemsKey]
 									: index
 							}
+							onItemSelectionChange={onItemSelectionChange}
 							schema={schema}
 						/>
 					))}

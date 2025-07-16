@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
@@ -65,9 +66,16 @@ public class UserAccountDTOConverter
 				setRoles(
 					() -> NestedFieldsSupplier.supply(
 						"roles",
-						nestedFieldNames -> TransformUtil.transformToArray(
-							_roleLocalService.getUserRoles(user.getUserId()),
-							role -> _toRole(role), Role.class)));
+						nestedFieldNames -> {
+							long assetLibraryId = GetterUtil.getLong(
+								dtoConverterContext.getAttribute(
+									"assetLibraryId"));
+
+							return TransformUtil.transformToArray(
+								_roleLocalService.getUserGroupRoles(
+									user.getUserId(), assetLibraryId),
+								role -> _toRole(role), Role.class);
+						}));
 			}
 		};
 	}

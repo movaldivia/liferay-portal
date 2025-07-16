@@ -7,8 +7,14 @@ import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
 import {useIsMounted, useThunk} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
-import {IHTMLElementBuilder, openToast} from 'frontend-js-components-web';
-import {fetch, loadClientExtensions, loadModule} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {
+	ClientExtensionDefinition,
+	ClientExtensionResolution,
+	fetch,
+	loadClientExtensions,
+	loadModule,
+} from 'frontend-js-web';
 import React, {
 	RefObject,
 	useCallback,
@@ -62,13 +68,14 @@ import {loadData} from './utils/loadData';
 
 import {logError} from './utils/logError';
 import {
+	ESelectionTrigger,
 	IField,
 	IFrontendDataSetProps,
 	IModalConfig,
 	IRequestOptions,
 	ISuccessNotification,
+	IView,
 	TSort,
-	TViews,
 } from './utils/types';
 import ViewsContext from './views/ViewsContext';
 
@@ -355,20 +362,29 @@ const FrontendDataSetContent = ({
 								importDeclaration: `default from ${filter.clientExtensionFilterURL}`,
 							}))
 					: [],
-				onLoad: (bindingContexts: any) => {
+				onLoad: (
+					resolutions: Array<ClientExtensionResolution<any>>
+				) => {
 					const newFilters = initialFilters?.map((filter) => {
-						const bindingContext = bindingContexts.find(
-							(bindingContext: any) =>
-								bindingContext.context
-									.clientExtensionFilterURL ===
+						const resolution = resolutions.find(
+							(resolution: ClientExtensionResolution<any>) =>
+								resolution.context.clientExtensionFilterURL ===
 								filter.clientExtensionFilterURL
 						);
 
-						if (bindingContext) {
+						if (resolution) {
+							if (resolution.error) {
+								return {
+									...filter,
+									clientExtensionResolutionError:
+										resolution.error,
+								};
+							}
+
 							return {
 								...filter,
 								clientExtensionFilterImplementation:
-									bindingContext.binding,
+									resolution.binding,
 							};
 						}
 
@@ -383,7 +399,12 @@ const FrontendDataSetContent = ({
 			},
 			{
 				clientExtensionDefinitions: views.reduce(
-					(clientExtensionDefinitions: Array<any>, view: TViews) => {
+					(
+						clientExtensionDefinitions: Array<
+							ClientExtensionDefinition<any>
+						>,
+						view: IView
+					) => {
 						if (view.schema && 'fields' in view.schema) {
 							if (!view.schema.fields.length) {
 								return clientExtensionDefinitions;
@@ -411,24 +432,32 @@ const FrontendDataSetContent = ({
 					},
 					[]
 				),
-				onLoad: (bindingContexts: any) => {
-					bindingContexts.forEach(
-						({
-							binding: htmlElementBuilder,
-							context: field,
-						}: {
-							binding: IHTMLElementBuilder<unknown>;
-							context: IField;
-						}) => {
+				onLoad: (
+					resolutions: Array<ClientExtensionResolution<any>>
+				) => {
+					resolutions.forEach((resolution) => {
+						const {binding, context: field, error} = resolution;
+
+						if (error) {
 							viewsDispatch({
 								type: VIEWS_ACTION_TYPES.UPDATE_FIELD,
 								value: {
-									htmlElementBuilder,
+									clientExtensionResolutionError: error,
 									name: field.fieldName,
 								},
 							});
+
+							return;
 						}
-					);
+
+						viewsDispatch({
+							type: VIEWS_ACTION_TYPES.UPDATE_FIELD,
+							value: {
+								htmlElementBuilder: binding,
+								name: field.fieldName,
+							},
+						});
+					});
 				},
 			},
 		]);
@@ -460,11 +489,31 @@ const FrontendDataSetContent = ({
 		);
 	}
 
-	function selectItems(value: any) {
+	function selectItems({
+		trigger,
+		value,
+	}: {
+		trigger: ESelectionTrigger;
+		value: any;
+	}) {
 		if (selectionType === 'single') {
 			return setSelectedItemsValue(
 				Array.isArray(value) ? value : [value]
 			);
+		}
+
+		if (trigger === ESelectionTrigger.CONTAINER) {
+			return setSelectedItemsValue((previousValues) => {
+				const newValue = Array.isArray(value) ? value : [value];
+
+				if (previousValues.length === 1) {
+					return selectedItemsValue.includes(newValue[0])
+						? []
+						: [value];
+				}
+
+				return newValue;
+			});
 		}
 
 		if (Array.isArray(value)) {
@@ -589,7 +638,7 @@ const FrontendDataSetContent = ({
 		setComponentLoading(true);
 
 		loadModule(contentRendererModuleURL)
-			.then((view: TViews) => {
+			.then((view: IView) => {
 				if (isMounted()) {
 					viewsDispatch({
 						type: VIEWS_ACTION_TYPES.UPDATE_VIEW_COMPONENT,
@@ -641,6 +690,17 @@ const FrontendDataSetContent = ({
 			return;
 		}
 
+		const clientExtensionFiltersLoading = filters.some(
+			(filter: any) =>
+				filter.clientExtensionFilterURL &&
+				!filter.clientExtensionFilterImplementation &&
+				!filter.clientExtensionResolutionError
+		);
+
+		if (clientExtensionFiltersLoading) {
+			return;
+		}
+
 		setDataLoading(true);
 
 		requestData()!.then(({data, ok, status: statusCode}) => {
@@ -671,7 +731,7 @@ const FrontendDataSetContent = ({
 				setDataLoading(false);
 			}
 		});
-	}, [apiURL, isMounted, requestData, setDataLoading]);
+	}, [apiURL, filters, isMounted, requestData, setDataLoading]);
 
 	useEffect(() => {
 		function handleRefreshFromTheOutside(event: any) {
@@ -718,7 +778,12 @@ const FrontendDataSetContent = ({
 				onSelectAll={(value: boolean) =>
 					setAllItemsSelectedActive(value)
 				}
-				selectItems={(items: Array<any>) => selectItems(items)}
+				selectItems={(items: Array<any>) =>
+					selectItems({
+						trigger: ESelectionTrigger.INPUT,
+						value: items,
+					})
+				}
 				selectedItems={selectedItems}
 				selectedItemsKey={selectedItemsKey}
 				selectedItemsValue={selectedItemsValue}
@@ -750,7 +815,13 @@ const FrontendDataSetContent = ({
 						header={header}
 						items={items}
 						itemsActions={itemsActions}
-						onItemSelectionChange={(selectedItem: any) => {
+						onItemSelectionChange={({
+							item: selectedItem,
+							trigger,
+						}: {
+							item: any;
+							trigger: ESelectionTrigger;
+						}) => {
 							if (allItemsSelectedActive) {
 								setSelectedItemsValue(
 									items
@@ -765,7 +836,10 @@ const FrontendDataSetContent = ({
 								setAllItemsSelectedActive(false);
 							}
 							else {
-								selectItems(selectedItem[selectedItemsKey]);
+								selectItems({
+									trigger,
+									value: selectedItem[selectedItemsKey],
+								});
 							}
 						}}
 						style={style}
@@ -1140,10 +1214,7 @@ const FrontendDataSetContent = ({
 				selectionType,
 				showBulkActionsManagementBar,
 				showBulkActionsManagementBarActions,
-				showInfoPanel:
-					infoPanelComponent && Liferay.FeatureFlags['LPD-41774']
-						? true
-						: false,
+				showInfoPanel: infoPanelComponent ? true : false,
 				sidePanelId: dataSetSupportSidePanelIdRef.current,
 				sorts,
 				style,

@@ -15,107 +15,9 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 	<liferay-util:param name="tabs1" value="qa-builds" />
 </liferay-util:include>
 
-<portlet:renderURL var="viewPatcherBuildsURL">
-	<portlet:param name="mvcRenderCommandName" value="/patcher/index_builds" />
-</portlet:renderURL>
-
-<aui:form action="<%= viewPatcherBuildsURL %>" method="get" name="fm">
-	<liferay-ui:search-toggle
-		buttonLabel="search"
-		displayTerms="<%= new DisplayTerms(renderRequest) %>"
-		id="toggle_id_patcher_build_search"
-	>
-		<aui:input name="patcherProductVersionId" type="hidden" value='<%= ParamUtil.getLong(request, "patcherProductVersionId") %>' />
-
-		<div class="layout">
-			<div class="layout-content">
-				<clay:row>
-					<clay:col>
-						<aui:input label="build-id" name="<%= Field.ENTRY_CLASS_PK %>" size="30" type="text" />
-					</clay:col>
-
-					<clay:col>
-						<aui:input label="name" name="patcherBuildName" size="30" title="search-builds" type="text" />
-					</clay:col>
-
-					<clay:col>
-						<aui:input label="account-code" name="patcherBuildAccountEntryCode" size="30" title="search-accounts" type="text" />
-					</clay:col>
-
-					<clay:col>
-						<aui:input name="supportTicket" size="30" title="search-support-tickets" type="text" />
-					</clay:col>
-
-					<clay:col>
-						<aui:input checked="<%= true %>" name="hideOldBuildVersions" type="checkbox" />
-					</clay:col>
-				</clay:row>
-			</div>
-		</div>
-
-		<div class="layout">
-			<div class="layout-content">
-				<clay:row>
-					<clay:col>
-						<aui:select label="status" name="statusFilter" showEmptyOption="<%= true %>">
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_MERGING %>" value="<%= WorkflowConstants.STATUS_BUILD_MERGING %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_COMPILING %>" value="<%= WorkflowConstants.STATUS_BUILD_COMPILING %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_CONFLICT %>" value="<%= WorkflowConstants.STATUS_BUILD_CONFLICT %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_COMPLETE %>" value="<%= WorkflowConstants.STATUS_BUILD_COMPLETE %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_READY_TO_RELEASE %>" value="<%= WorkflowConstants.STATUS_BUILD_READY_TO_RELEASE %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_RELEASED %>" value="<%= WorkflowConstants.STATUS_BUILD_RELEASED %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_FAILED %>" value="<%= WorkflowConstants.STATUS_BUILD_FAILED %>" />
-						</aui:select>
-					</clay:col>
-
-					<clay:col>
-						<aui:select label="qa-status" name="qaStatusFilter" showEmptyOption="<%= true %>">
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_ANALYSIS_NEEDED %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_ANALYSIS_NEEDED %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_ANALYSIS_NEEDED_SMOKE_ONLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_ANALYSIS_NEEDED_SMOKE_ONLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_ANALYSIS_STARTED %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_ANALYSIS_STARTED %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_ANALYSIS_STARTED_SMOKE_ONLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_ANALYSIS_STARTED_SMOKE_ONLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_AUTOMATION_PASSED %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_PASSED %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_AUTOMATION_PASSED_SMOKE_ONLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_PASSED_SMOKE_ONLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_AUTOMATION_STARTED %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_STARTED %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_AUTOMATION_STARTED_SMOKE_ONLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_STARTED_SMOKE_ONLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_FAILED_MANUALLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_FAILED_MANUALLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_FAILED_MANUALLY_SMOKE_ONLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_FAILED_MANUALLY_SMOKE_ONLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_PASSED_MANUALLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_PASSED_MANUALLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_PASSED_MANUALLY_SMOKE_ONLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_PASSED_MANUALLY_SMOKE_ONLY %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_PENDING %>" value="<%= WorkflowConstants.STATUS_PENDING %>" />
-							<aui:option label="<%= WorkflowConstants.LABEL_BUILD_QA_PENDING_SMOKE_ONLY %>" value="<%= WorkflowConstants.STATUS_BUILD_QA_PENDING_SMOKE_ONLY %>" />
-						</aui:select>
-					</clay:col>
-
-					<clay:col>
-						<aui:select label="type" name="typeFilter" showEmptyOption="${false}">
-							<aui:option label="${PatcherBuildConstants.LABEL_OFFICIAL}" value="${PatcherBuildConstants.TYPE_OFFICIAL}" />
-							<aui:option label="${PatcherBuildConstants.LABEL_DEBUG}" value="${PatcherBuildConstants.TYPE_DEBUG}" />
-							<aui:option label="${PatcherBuildConstants.LABEL_IGNORE}" value="${PatcherBuildConstants.TYPE_IGNORE}" />
-							<aui:option label="${PatcherBuildConstants.LABEL_FIX_PACK}" value="${PatcherBuildConstants.TYPE_FIX_PACK}" />
-						</aui:select>
-					</clay:col>
-
-					<clay:col>
-						<aui:select label="project-version" name="patcherProjectVersionIdFilter" showEmptyOption="<%= true %>">
-
-							<%
-							for (PatcherProjectVersion patcherProjectVersion : PatcherProjectVersionLocalServiceUtil.getPatcherProjectVersions()) {
-							%>
-
-								<aui:option label="<%= patcherProjectVersion.getName() %>" value="<%= patcherProjectVersion.getPatcherProjectVersionId() %>" />
-
-							<%
-							}
-							%>
-
-						</aui:select>
-					</clay:col>
-				</clay:row>
-			</div>
-		</div>
-	</liferay-ui:search-toggle>
-</aui:form>
+<clay:management-toolbar
+	managementToolbarDisplayContext="<%= new PatcherBuildsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, patcherBuildsDisplayContext.getSearchContainer()) %>"
+/>
 
 <liferay-ui:search-container
 	searchContainer="<%= patcherBuildsDisplayContext.getSearchContainer() %>"
@@ -143,31 +45,38 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 		<liferay-ui:search-container-column-text
 			cssClass="osb-patcher-search-container-column-text-icon"
 		>
-			<liferay-ui:icon
-				image='<%= PatcherBuildUtil.isObsolete(patcherBuild.getPatcherBuildId()) ? "../common/activate" : StringPool.BLANK %>'
-				message="this-build-is-obsolete"
-				onClick='<%= hasPermissions ? liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "view-fixes-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + viewPatcherBuildPatcherFixesURL + "');" : StringPool.BLANK %>'
-				url='<%= hasPermissions ? "javascript:void(0);" : StringPool.BLANK %>'
-			/>
+			<c:if test="<%= PatcherBuildUtil.isObsolete(patcherBuild.getPatcherBuildId()) %>">
+				<liferay-ui:icon
+					image="../common/activate"
+					message="this-build-is-obsolete"
+					onClick='<%= hasPermissions ? liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "view-fixes-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + viewPatcherBuildPatcherFixesURL + "');" : StringPool.BLANK %>'
+					url='<%= hasPermissions ? "javascript:void(0);" : StringPool.BLANK %>'
+				/>
+			</c:if>
 
-			<liferay-ui:icon
-				image='<%= PatcherFixUtil.containsPatcherFixWorkaround(patcherBuild.getPatcherBuildId()) ? "../api/exception" : StringPool.BLANK %>'
-				message="this-build-contains-workaround-fixes"
-				onClick='<%= hasPermissions ? liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "view-fixes-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + viewPatcherBuildPatcherFixesURL + "');" : StringPool.BLANK %>'
-				url='<%= hasPermissions ? "javascript:void(0);" : StringPool.BLANK %>'
-			/>
+			<c:if test="<%= PatcherFixUtil.containsPatcherFixWorkaround(patcherBuild.getPatcherBuildId()) %>">
+				<liferay-ui:icon
+					image="../api/exception"
+					message="this-build-contains-workaround-fixes"
+					onClick='<%= hasPermissions ? liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "view-fixes-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + viewPatcherBuildPatcherFixesURL + "');" : StringPool.BLANK %>'
+					url='<%= hasPermissions ? "javascript:void(0);" : StringPool.BLANK %>'
+				/>
+			</c:if>
 
-			<liferay-ui:icon
-				image='<%= PatcherFixUtil.containsPatcherFixComment(patcherBuild.getPatcherBuildId()) ? "../common/message" : StringPool.BLANK %>'
-				message="this-build-contains-fixes-with-comments"
-				onClick='<%= hasPermissions ? liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "view-fixes-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + viewPatcherBuildPatcherFixesURL + "');" : StringPool.BLANK %>'
-				url='<%= hasPermissions ? "javascript:void(0);" : StringPool.BLANK %>'
-			/>
+			<c:if test="<%= PatcherFixUtil.containsPatcherFixComment(patcherBuild.getPatcherBuildId()) %>">
+				<liferay-ui:icon
+					image="../common/message"
+					message="this-build-contains-fixes-with-comments"
+					onClick='<%= hasPermissions ? liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "view-fixes-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + viewPatcherBuildPatcherFixesURL + "');" : StringPool.BLANK %>'
+					url='<%= hasPermissions ? "javascript:void(0);" : StringPool.BLANK %>'
+				/>
+			</c:if>
 		</liferay-ui:search-container-column-text>
 
 		<portlet:renderURL var="viewPatcherBuildURL">
 			<portlet:param name="mvcRenderCommandName" value="/patcher/view_builds" />
 			<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+			<portlet:param name="redirect" value="<%= currentURL %>" />
 		</portlet:renderURL>
 
 		<liferay-ui:search-container-column-text
@@ -217,25 +126,22 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 			name="content"
 		>
 			<portlet:renderURL var="viewPatcherBuildContentURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
-				<portlet:param name="mvcRenderCommandName" value="/patcher/view_content_builds" />
-				<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+				<portlet:param name="mvcRenderCommandName" value="/patcher/view_project_versions_fixed_issues" />
+				<portlet:param name="patcherProjectVersionId" value="<%= String.valueOf(patcherBuild.getPatcherProjectVersionId()) %>" />
 			</portlet:renderURL>
 
 			<clay:button
 				cssClass="nobr"
 				displayType="link"
-				label='<%= PatcherFixPackUtil.getPatcherFixPackNamesCount(patcherBuild.getName()) + " " + LanguageUtil.get(request, "fix-packs") + " " + PatcherUtil.getTicketsCount(patcherBuild.getName()) + " " + LanguageUtil.get(request, "tickets") %>'
+				label='<%= PatcherFixPackUtil.getPatcherFixPackNamesCount(patcherBuild.getName()) + " " + LanguageUtil.get(request, "fix-packs") + " + " + PatcherUtil.getTicketsCount(patcherBuild.getName()) + " " + LanguageUtil.get(request, "tickets") %>'
 				onClick='<%= liferayPortletResponse.getNamespace() + "handleClick('" + LanguageUtil.get(request, "content") + "', '" + viewPatcherBuildContentURL + "');" %>'
 			/>
 		</liferay-ui:search-container-column-text>
 
-		<liferay-ui:search-container-column-text
+		<liferay-ui:search-container-column-date
 			name="status-date"
-		>
-			<fmt:formatDate
-				value="<%= patcherBuild.getStatusDate() %>"
-			/>
-		</liferay-ui:search-container-column-text>
+			value="<%= patcherBuild.getStatusDate() %>"
+		/>
 
 		<liferay-ui:search-container-column-text
 			name="patcher-status"
@@ -253,8 +159,8 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 				<clay:link
 					cssClass="nobr"
 					href='<%= jenkinsResult.get("statusURL") %>'
+					label='<%= jenkinsResult.get("jobName") %>'
 					target="_blank"
-					title='<%= jenkinsResult.get("jobName") %>'
 				/>
 
 			<%
@@ -337,6 +243,7 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 					<portlet:renderURL var="editPatcherBuildURL">
 						<portlet:param name="mvcRenderCommandName" value="/patcher/edit_builds" />
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:renderURL>
 
 					<liferay-ui:icon
@@ -348,8 +255,9 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 
 				<c:if test="<%= PatcherPermission.contains(permissionChecker, patcherBuild, PatcherActionKeys.EDIT, patcherBuild.getUserId()) && PatcherBuildUtil.isLatestPatcherBuild(patcherBuild) && (patcherBuild.getType() != PatcherBuildConstants.TYPE_FIX_PACK) %>">
 					<portlet:renderURL var="createPatcherBuildTemplateURL">
-						<portlet:param name="mvcRenderCommandName" value="/patcher/create_builds" />
+						<portlet:param name="mvcRenderCommandName" value="/patcher/add_builds" />
 						<portlet:param name="templatePatcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:renderURL>
 
 					<liferay-ui:icon
@@ -365,7 +273,8 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 						image="edit"
 						message="edit-engineer-comments"
 						method="get"
-						url="<%= editPatcherBuildCommentsFieldURL %>"
+						onClick='<%= liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "edit-engineer-comments-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + editPatcherBuildCommentsFieldURL + "')" %>'
+						url="javascript:void(0);"
 					/>
 				</c:if>
 
@@ -374,7 +283,8 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 						image="edit"
 						message="edit-qa-status"
 						method="get"
-						url="<%= editPatcherBuildQAFieldsURL %>"
+						onClick='<%= liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "edit-qa-status-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + editPatcherBuildQAFieldsURL + "')" %>'
+						url="javascript:void(0);"
 					/>
 				</c:if>
 
@@ -395,6 +305,7 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 				<c:if test="<%= patcherBuild.getStatus() == WorkflowConstants.STATUS_BUILD_COMPLETE %>">
 					<portlet:actionURL name="/patcher/test_builds" var="testPatcherBuildURL">
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_STARTED) %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 
@@ -405,8 +316,9 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 						url="<%= testPatcherBuildURL %>"
 					/>
 
-					<portlet:actionURL name="/patcher/smoke_test_builds" var="smokeTestPatcherBuildURL">
+					<portlet:actionURL name="/patcher/test_builds" var="smokeTestPatcherBuildURL">
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_STARTED_SMOKE_ONLY) %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 
@@ -423,7 +335,8 @@ PatcherBuildsDisplayContext patcherBuildsDisplayContext = new PatcherBuildsDispl
 						image="view"
 						message="view-fixes"
 						method="get"
-						url="<%= viewPatcherBuildPatcherFixesURL %>"
+						onClick='<%= liferayPortletResponse.getNamespace() + "handleClick('" + UnicodeLanguageUtil.format(request, "view-fixes-for-build-id-x", patcherBuild.getPatcherBuildId()) + "', '" + viewPatcherBuildPatcherFixesURL + "')" %>'
+						url="javascript:void(0);"
 					/>
 				</c:if>
 

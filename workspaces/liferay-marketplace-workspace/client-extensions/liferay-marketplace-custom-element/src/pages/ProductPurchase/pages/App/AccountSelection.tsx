@@ -6,10 +6,7 @@
 import {useSelector} from '@xstate/store/react';
 
 import i18n from '../../../../i18n';
-import {
-	getProductPriceModel,
-	isCloudProduct,
-} from '../../../../utils/productUtils';
+import {getProductPriceModel} from '../../../../utils/productUtils';
 import {useProductPurchaseOutletContext} from '../../ProductPurchaseOutlet';
 import ProductPurchaseApp from '../../services/ProductPurchaseApp';
 import {productPurchaseStore} from '../../store/AppPurchaseStore';
@@ -31,20 +28,18 @@ const AccountSelection = () => {
 
 	const {isFreeApp} = getProductPriceModel(product);
 
-	const isFreeDXP = isFreeApp && !isCloudProduct(product);
-
 	return (
 		<ProductPurchaseAccountSelection
 			footerProps={{
 				continueButtonProps: {
 					children: i18n.translate(
-						isFreeDXP ? 'get-app' : 'continue'
+						isFreeApp ? 'get-app' : 'continue'
 					),
 					disabled:
 						!selectedAccount ||
 						(isFreeApp ? !eulaAgreement : false),
 					onClick: () => {
-						if (isFreeDXP) {
+						if (isFreeApp) {
 							return handlePurchase(ProductPurchaseApp);
 						}
 

@@ -11,7 +11,7 @@ import {
 	ObjectRelationshipAPI,
 	ObjectValidationRuleAPI,
 } from '@liferay/object-admin-rest-client-js';
-import {expect, mergeTests} from '@playwright/test';
+import {Locator, expect, mergeTests} from '@playwright/test';
 
 import {accountSettingsPagesTest} from '../../../fixtures/accountSettingsPagesTest';
 import {applicationsMenuPageTest} from '../../../fixtures/applicationsMenuPageTest';
@@ -318,6 +318,65 @@ test.describe('Manage object entries through Friendly URL', () => {
 		await expect(friendlyUrl).toHaveValue('first-url');
 	});
 
+	test('friendly URL input is disabled when viewed inside workflow task detail', async ({
+		applicationsMenuPage,
+		configurationTabPage,
+		page,
+		site,
+		viewObjectEntriesPage,
+		workflowTaskDetailsPage,
+		workflowTasksPage,
+	}) => {
+		let friendlyUrlInput: Locator;
+
+		await test.step('Assign the single approver workflow to the object created', async () => {
+			await applicationsMenuPage.goToProcessBuilder();
+
+			await configurationTabPage.configurationTabLink.click();
+
+			await configurationTabPage.assignWorkflowToAssetType(
+				'Single Approver',
+				_objectDefinition.label['en_US']
+			);
+		});
+
+		await test.step('Assert that the friendly URL is enabled', async () => {
+			await viewObjectEntriesPage.goto(
+				_objectDefinition.className,
+				'en',
+				site.friendlyUrlPath
+			);
+
+			await viewObjectEntriesPage.clickAddObjectEntry();
+
+			friendlyUrlInput = page.getByRole('textbox', {
+				name: 'Friendly URL There is a limit',
+			});
+
+			await expect(friendlyUrlInput).not.toBeDisabled();
+		});
+
+		await test.step('Add an object entry', async () => {
+			await friendlyUrlInput.fill('test-url');
+
+			await page.getByTestId('visibleChangeInput').fill('test entry');
+
+			await viewObjectEntriesPage.saveObjectEntryButton.click();
+
+			await expect(viewObjectEntriesPage.successMessage).toBeVisible();
+		});
+
+		await test.step('Go to the workflow task detail and verify that the friendly URL input is disabled', async () => {
+			await workflowTasksPage.goToAssignedToMyRoles();
+
+			await workflowTaskDetailsPage.selectAsset(
+				_objectDefinition.label['en_US']
+			);
+
+			await expect(friendlyUrlInput).toBeDisabled();
+		});
+	});
+
 	test('verify that friendly URL field is not visible when customization is disabled', async ({
 		apiHelpers,
 		page,
@@ -385,7 +444,6 @@ test.describe('Manage object entries through Object Definition widget', () => {
 		const objectDefinition =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
 				className: 'com.liferay.object.model.ObjectDefinition#1234',
-				objectFolderExternalReferenceCode: 'default',
 				status: {code: 0},
 				titleObjectFieldName: 'textField',
 			});
@@ -1092,7 +1150,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 	}) => {
 		const objectDefinition1 =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
-				objectFolderExternalReferenceCode: 'default',
 				status: {code: 0},
 				titleObjectFieldName: 'textField',
 			});
@@ -1104,7 +1161,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 
 		const objectDefinition2 =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
-				objectFolderExternalReferenceCode: 'default',
 				status: {code: 0},
 			});
 
@@ -1179,7 +1235,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 
 		const objectDefinition1 =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
-				objectFolderExternalReferenceCode: 'default',
 				scope: 'company',
 				status: {code: 0},
 				titleObjectFieldName: objectField,
@@ -1192,7 +1247,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 
 		const objectDefinition2 =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
-				objectFolderExternalReferenceCode: 'default',
 				scope: 'company',
 				status: {code: 0},
 				titleObjectFieldName: objectField,
@@ -1338,7 +1392,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 				objectFields: [
 					mockedObjectFields.attachmentFieldDocumentsAndMedia,
 				],
-				objectFolderExternalReferenceCode: 'default',
 				status: {code: 0},
 			});
 
@@ -1375,7 +1428,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 		const objectDefinition =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
 				objectFields,
-				objectFolderExternalReferenceCode: 'default',
 				panelCategoryKey: 'control_panel.object',
 				status: {code: 0},
 				titleObjectFieldName: 'customField',
@@ -1556,7 +1608,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 			objectDefinition =
 				await apiHelpers.objectAdmin.postRandomObjectDefinition({
 					objectFields,
-					objectFolderExternalReferenceCode: 'default',
 					panelCategoryKey: 'control_panel.object',
 					status: {code: 0},
 					titleObjectFieldName: 'customField',
@@ -1644,6 +1695,45 @@ test.describe('Manage object entries through View Object Entries', () => {
 				'Entry C'
 			);
 		});
+	});
+
+	test('loading element count is one even when pressing save button multiple times', async ({
+		apiHelpers,
+		page,
+		viewObjectEntriesPage,
+	}) => {
+		const {objectFields} = await mockObjectFields({
+			apiHelpers,
+			objectFieldBusinessTypes: ['text'],
+		});
+
+		const requiredObjectFields = objectFields.map((objectField) => {
+			return {
+				...objectField,
+				required: true,
+			};
+		});
+
+		const objectDefinition =
+			await apiHelpers.objectAdmin.postRandomObjectDefinition({
+				objectFields: requiredObjectFields,
+				status: {code: 0},
+			});
+
+		apiHelpers.data.push({
+			id: objectDefinition.id,
+			type: 'objectDefinition',
+		});
+
+		await viewObjectEntriesPage.goto(objectDefinition.className);
+
+		await viewObjectEntriesPage.addObjectEntryButton.click();
+
+		for (let i = 0; i <= 10; i++) {
+			await viewObjectEntriesPage.saveObjectEntryButton.click();
+		}
+
+		await expect(page.locator('.loading-animation')).toHaveCount(1);
 	});
 
 	test(
@@ -1782,7 +1872,6 @@ test.describe('Manage object entries through View Object Entries', () => {
 		const objectDefinition =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
 				objectFields: [mockedObjectFields.attachmentFieldUserComputer],
-				objectFolderExternalReferenceCode: 'default',
 				status: {code: 0},
 			});
 
@@ -1924,7 +2013,6 @@ test.describe('Manage object entries through Workflow', () => {
 	}) => {
 		const objectDefinition =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
-				objectFolderExternalReferenceCode: 'default',
 				status: {code: 0},
 				titleObjectFieldName: 'textField',
 			});
@@ -1993,7 +2081,6 @@ test.describe('Manage object entries through Workflow', () => {
 
 		const objectDefinition =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
-				objectFolderExternalReferenceCode: 'default',
 				status: {code: 0},
 				titleObjectFieldName: 'textField',
 			});
@@ -2195,10 +2282,30 @@ scheduleTest.describe('Manage object entries schedule properties', () => {
 	scheduleTest.beforeEach(async ({accountSettingsPage, apiHelpers, page}) => {
 		const objectDefinition =
 			await apiHelpers.objectAdmin.postRandomObjectDefinition({
-				status: {code: 0},
+				status: {code: 2},
 			});
 
 		_objectDefinition = objectDefinition;
+
+		const objectDefinitionAPIClient =
+			await apiHelpers.buildRestClient(ObjectDefinitionAPI);
+
+		const shouldEnableConfiguration = !scheduleTest
+			.info()
+			.tags.includes('@enableObjectEntryScheduleFalse');
+
+		if (shouldEnableConfiguration) {
+			await objectDefinitionAPIClient.patchObjectDefinition(
+				_objectDefinition.id,
+				{
+					enableObjectEntrySchedule: true,
+				}
+			);
+
+			await objectDefinitionAPIClient.postObjectDefinitionPublish(
+				_objectDefinition.id
+			);
+		}
 
 		apiHelpers.data.push({
 			id: objectDefinition.id,
@@ -2418,9 +2525,7 @@ scheduleTest.describe('Manage object entries schedule properties', () => {
 				_objectDefinition.label['en_US']
 			);
 
-			await viewObjectEntriesPage.page
-				.getByLabel('Never Expire', {exact: true})
-				.uncheck();
+			await viewObjectEntriesPage.neverExpire.uncheck();
 
 			await viewObjectEntriesPage.scheduleForCurrentDate('Expiration');
 
@@ -2445,6 +2550,37 @@ scheduleTest.describe('Manage object entries schedule properties', () => {
 			await expect(
 				page.getByText('The date entered is in the past')
 			).toBeVisible();
+		}
+	);
+
+	scheduleTest(
+		'schedule container is not visible when enableObjectEntrySchedule is disabled',
+		{tag: '@enableObjectEntryScheduleFalse'},
+		async ({apiHelpers, viewObjectEntriesPage}) => {
+			const objectDefinitionAPIClient =
+				await apiHelpers.buildRestClient(ObjectDefinitionAPI);
+
+			await objectDefinitionAPIClient.postObjectDefinitionPublish(
+				_objectDefinition.id
+			);
+
+			await viewObjectEntriesPage.goto(_objectDefinition.className);
+
+			await viewObjectEntriesPage.clickAddObjectEntry(
+				_objectDefinition.label['en_US']
+			);
+
+			await expect(
+				viewObjectEntriesPage.schedulePanelButton
+			).not.toBeVisible();
+
+			await expect(
+				viewObjectEntriesPage.expirationDateInput
+			).not.toBeVisible();
+
+			await expect(
+				viewObjectEntriesPage.reviewDateInput
+			).not.toBeVisible();
 		}
 	);
 });

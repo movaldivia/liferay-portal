@@ -425,7 +425,7 @@ test(
 				'date': buildTableRowSpec('false', 'Date and Time'),
 				'description': buildTableRowSpec('false', 'Default'),
 				'id': buildTableRowSpec('true', 'Action Link'),
-				'size': buildTableRowSpec('false', 'Default'),
+				'size': buildTableRowSpec('false', ''),
 				'status': buildTableRowSpec('false', 'Status'),
 				'title': buildTableRowSpec('true', 'Default'),
 			});
@@ -535,6 +535,7 @@ test(
 
 			await assertFilterEntries('Advanced Sample', [
 				['Client Extension', 'id', 'Client Extension Filter', true],
+				['Invalid', 'invalid', 'Client Extension Filter', true],
 				['Date Range', 'date', 'Date Filter', true],
 				['Color', 'color', 'System Filter', false],
 				['Size', 'size', 'System Filter', false],

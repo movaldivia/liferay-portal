@@ -58,6 +58,7 @@ dependencies {
 	compileInclude group: "org.locationtech.jts", name: "jts-core", version: "1.20.0"
 	compileInclude group: "org.locationtech.spatial4j", name: "spatial4j", version: "0.8"
 	compileInclude group: "org.yaml", name: "snakeyaml", version: "2.3"
+	compileInclude project(":apps:portal-search-elasticsearch7:portal-search-elasticsearch7-sidecar-agent")
 	compileOnly group: "com.fasterxml.jackson.core", name: "jackson-core", version: "2.18.2"
 	compileOnly group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-cbor", version: "2.18.2"
 	compileOnly group: "com.fasterxml.woodstox", name: "woodstox-core", version: "6.4.0"
@@ -184,6 +185,23 @@ test {
 
 			into libProcessExecutorDir.getPath()
 			from configurations.compileOnly
+		}
+
+		File libSidecarAgentDir = file("tmp/elasticsearch-sidecar")
+
+		if (!libSidecarAgentDir.exists()) {
+			libSidecarAgentDir.mkdir()
+		}
+
+		project.copy {
+			include "com.liferay.portal.search.elasticsearch7.sidecar.agent*.jar"
+
+			configurations.compileInclude.allDependencies.each {
+				rename "-${it.version}", ""
+			}
+
+			into libSidecarAgentDir.getPath()
+			from configurations.compileInclude
 		}
 	}
 }

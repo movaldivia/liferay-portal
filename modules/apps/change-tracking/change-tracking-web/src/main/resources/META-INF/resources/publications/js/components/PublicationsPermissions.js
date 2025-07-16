@@ -9,6 +9,7 @@ import {fetch, objectToFormData} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import {showNotification} from '../util/util';
+import PublicationsPermissionsSearchBar from './PublicationsPermissionsSearchBar';
 import PublicationsPermissionsTable from './form/PublicationsPermissionsTable';
 
 export default function PublicationsPermissions({
@@ -17,6 +18,7 @@ export default function PublicationsPermissions({
 	roles,
 	updatePermissionsURL,
 }) {
+	const [filteredRoles, setFilteredRoles] = useState(roles);
 	const [showModal, setShowModal] = useState(false);
 	const [permissions, setPermissions] = useState(defaultPermissions);
 
@@ -70,10 +72,16 @@ export default function PublicationsPermissions({
 				</ClayModal.Header>
 
 				<ClayModal.Body scrollable>
+					<PublicationsPermissionsSearchBar
+						filteredRoles={filteredRoles}
+						onChangeRoles={setFilteredRoles}
+						roles={roles}
+					/>
+
 					<PublicationsPermissionsTable
 						defaultPermissions={defaultPermissions}
 						onChange={setPermissions}
-						roles={roles}
+						roles={filteredRoles}
 					/>
 				</ClayModal.Body>
 
@@ -81,6 +89,7 @@ export default function PublicationsPermissions({
 					last={
 						<ClayButton.Group spaced>
 							<ClayButton
+								aria-label={Liferay.Language.get('cancel')}
 								displayType="secondary"
 								onClick={() =>
 									Liferay.Portlet.refresh(
@@ -92,6 +101,7 @@ export default function PublicationsPermissions({
 							</ClayButton>
 
 							<ClayButton
+								aria-label={Liferay.Language.get('save')}
 								onClick={() => {
 									saveRolePermissions();
 								}}
@@ -109,6 +119,7 @@ export default function PublicationsPermissions({
 	return (
 		<>
 			<ClayButton
+				aria-label={Liferay.Language.get('edit-permissions')}
 				displayType="secondary"
 				onClick={() => setShowModal(true)}
 				title={Liferay.Language.get('edit-permissions')}

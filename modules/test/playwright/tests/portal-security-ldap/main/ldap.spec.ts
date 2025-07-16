@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {Page, expect, mergeTests} from '@playwright/test';
+import {Locator, Page, expect, mergeTests} from '@playwright/test';
 
 import {apiHelpersTest} from '../../../fixtures/apiHelpersTest';
 import {instanceSettingsPagesTest} from '../../../fixtures/instanceSettingsPagesTest';
@@ -1011,6 +1011,35 @@ async function invokeLdapImport(page: Page, ldapServer?: TLdapServer) {
 		await serverAdministrationPage.executeScript(script);
 	});
 }
+
+test('LPD-57008 Verify if the unused error keywords fields are no longer present', async ({
+	ldapConfigurationPage,
+}) => {
+	await test.step('Go to LDAP Connection tab', async () => {
+		await ldapConfigurationPage.goToConnectionTab();
+	});
+
+	await test.step('Check if unused password error keywords fields are visible', async () => {
+		const errorKeywordFields: Locator[] = [
+			ldapConfigurationPage.page.getByLabel(
+				'Error Password Age Keywords'
+			),
+			ldapConfigurationPage.page.getByLabel(
+				'Error Password Not Changeable Keywords'
+			),
+			ldapConfigurationPage.page.getByLabel(
+				'Error Password Syntax Keywords'
+			),
+			ldapConfigurationPage.page.getByLabel(
+				'Error Password Trivial Text Keywords'
+			),
+		];
+
+		for (const errorKeywordField of errorKeywordFields) {
+			await expect(errorKeywordField).not.toBeVisible();
+		}
+	});
+});
 
 async function resetLdapImportSystemSettings(
 	systemSettingsPage: SystemSettingsPage

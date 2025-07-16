@@ -64,8 +64,11 @@ public class LayoutUtil {
 
 		if (pageSpecifications == null) {
 			Layout layout = LayoutLocalServiceUtil.addLayout(
-				null, serviceContext.getUserId(), groupId, privateLayout, 0, 0,
-				0, nameMap, titleMap, descriptionMap, null, robotsMap, type,
+				GetterUtil.getString(
+					serviceContext.getAttribute("layoutExternalReferenceCode"),
+					null),
+				serviceContext.getUserId(), groupId, privateLayout, 0, 0, 0,
+				nameMap, titleMap, descriptionMap, null, robotsMap, type,
 				typeSettingsUnicodeProperties.toString(), hidden, system,
 				friendlyURLMap, 0L, serviceContext);
 
@@ -616,11 +619,15 @@ public class LayoutUtil {
 
 		return LayoutServiceUtil.updateLayout(
 			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
-			layout.getParentLayoutId(), nameMap, titleMap, descriptionMap,
-			layout.getKeywordsMap(), robotsMap, layout.getType(),
-			layout.isHidden(), friendlyURLMap, layout.getIconImage(), null,
-			styleBookEntryId, faviconFileEntryId, masterLayoutPlid,
-			serviceContext);
+			GetterUtil.getLong(
+				serviceContext.getAttribute("parentLayoutId"),
+				layout.getParentLayoutId()),
+			nameMap, titleMap, descriptionMap, layout.getKeywordsMap(),
+			robotsMap, layout.getType(),
+			GetterUtil.getBoolean(
+				serviceContext.getAttribute("hidden"), layout.isHidden()),
+			friendlyURLMap, layout.getIconImage(), null, styleBookEntryId,
+			faviconFileEntryId, masterLayoutPlid, serviceContext);
 	}
 
 	private static Layout _updateLookAndFeel(Layout layout, Settings settings)

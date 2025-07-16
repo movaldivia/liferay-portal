@@ -311,6 +311,55 @@ public class JenkinsUtil {
 		return jenkinsRequestParameters;
 	}
 
+	public static String getJenkinsResult(
+			JSONObject newJenkinsResultJSONObject,
+			String patcherFixJenkinsResults)
+		throws Exception {
+
+		if (Validator.isNull(patcherFixJenkinsResults)) {
+			JSONArray newJenkinsResultJSONArray = JSONUtil.put(
+				newJenkinsResultJSONObject);
+
+			return newJenkinsResultJSONArray.toString();
+		}
+
+		boolean newJenkinsResultJobNameExists = false;
+
+		JSONArray newJenkinsResultsJSONArray =
+			JSONFactoryUtil.createJSONArray();
+
+		JSONArray existingJenkinsResultsJSONArray =
+			JSONFactoryUtil.createJSONArray(patcherFixJenkinsResults);
+
+		for (int i = 0; i < existingJenkinsResultsJSONArray.length(); i++) {
+			JSONObject existingJenkinsResultJSONObject =
+				existingJenkinsResultsJSONArray.getJSONObject(i);
+
+			String newJobName = getJobName(newJenkinsResultJSONObject);
+
+			String existingJobName = getJobName(
+				existingJenkinsResultJSONObject);
+
+			if (StringUtil.equalsIgnoreCase(newJobName, existingJobName)) {
+				newJenkinsResultJobNameExists = true;
+
+				newJenkinsResultsJSONArray.put(newJenkinsResultJSONObject);
+
+				continue;
+			}
+
+			newJenkinsResultsJSONArray.put(existingJenkinsResultJSONObject);
+		}
+
+		if (newJenkinsResultJobNameExists) {
+			return newJenkinsResultsJSONArray.toString();
+		}
+
+		existingJenkinsResultsJSONArray.put(newJenkinsResultJSONObject);
+
+		return existingJenkinsResultsJSONArray.toString();
+	}
+
 	public static List<Map<String, String>> getJenkinsResults(
 			PatcherBuild patcherBuild)
 		throws Exception {
@@ -521,61 +570,6 @@ public class JenkinsUtil {
 		return jobName;
 	}
 
-	public static void putJenkinsResult(
-			PatcherFix patcherFix, JSONObject newJenkinsResultJSONObject)
-		throws Exception {
-
-		String patcherFixJenkinsResults = patcherFix.getJenkinsResults();
-
-		if (Validator.isNull(patcherFixJenkinsResults)) {
-			JSONArray newJenkinsResultJSONArray = JSONUtil.put(
-				newJenkinsResultJSONObject);
-
-			patcherFix.setJenkinsResults(newJenkinsResultJSONArray.toString());
-
-			return;
-		}
-
-		boolean newJenkinsResultJobNameExists = false;
-
-		JSONArray newJenkinsResultsJSONArray =
-			JSONFactoryUtil.createJSONArray();
-
-		JSONArray existingJenkinsResultsJSONArray =
-			JSONFactoryUtil.createJSONArray(patcherFixJenkinsResults);
-
-		for (int i = 0; i < existingJenkinsResultsJSONArray.length(); i++) {
-			JSONObject existingJenkinsResultJSONObject =
-				existingJenkinsResultsJSONArray.getJSONObject(i);
-
-			String newJobName = getJobName(newJenkinsResultJSONObject);
-
-			String existingJobName = getJobName(
-				existingJenkinsResultJSONObject);
-
-			if (StringUtil.equalsIgnoreCase(newJobName, existingJobName)) {
-				newJenkinsResultJobNameExists = true;
-
-				newJenkinsResultsJSONArray.put(newJenkinsResultJSONObject);
-
-				continue;
-			}
-
-			newJenkinsResultsJSONArray.put(existingJenkinsResultJSONObject);
-		}
-
-		if (newJenkinsResultJobNameExists) {
-			patcherFix.setJenkinsResults(newJenkinsResultsJSONArray.toString());
-
-			return;
-		}
-
-		existingJenkinsResultsJSONArray.put(newJenkinsResultJSONObject);
-
-		patcherFix.setJenkinsResults(
-			existingJenkinsResultsJSONArray.toString());
-	}
-
 	public static void sendAgentJenkinsRequest(
 			User user, BaseModel<?> baseModel)
 		throws Exception {
@@ -590,20 +584,14 @@ public class JenkinsUtil {
 				return;
 			}
 
-			PatcherFix mainPatcherFix =
-				PatcherFixLocalServiceUtil.getPatcherFix(
-					patcherBuild.getPatcherFixId());
-
 			DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
 				"yyyyMMddHHmmss");
 
-			mainPatcherFix.setRequestKey(
+			PatcherFixLocalServiceUtil.updateRequestKey(
+				patcherBuild.getPatcherFixId(),
 				PatcherUtil.generatePatcherKey(
-					PatcherFix.class.getName(),
-					mainPatcherFix.getPatcherFixId(),
+					PatcherFix.class.getName(), patcherBuild.getPatcherFixId(),
 					dateFormat.format(new Date())));
-
-			PatcherFixLocalServiceUtil.updatePatcherFix(mainPatcherFix);
 
 			sendAgentJenkinsPatcherBuildRequest(user, patcherBuild);
 		}
@@ -617,13 +605,11 @@ public class JenkinsUtil {
 			DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
 				"yyyyMMddHHmmss");
 
-			patcherFix.setRequestKey(
+			PatcherFixLocalServiceUtil.updateRequestKey(
+				patcherFix.getPatcherFixId(),
 				PatcherUtil.generatePatcherKey(
 					PatcherFix.class.getName(), patcherFix.getPatcherFixId(),
 					dateFormat.format(new Date())));
-
-			patcherFix = PatcherFixLocalServiceUtil.updatePatcherFix(
-				patcherFix);
 
 			sendAgentJenkinsPatcherFixRequest(user, patcherFix);
 		}
@@ -640,31 +626,17 @@ public class JenkinsUtil {
 		DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyyMMddHHmmss");
 
-		patcherBuild.setRequestKey(
+		patcherBuild = PatcherBuildLocalServiceUtil.updateRequestKey(
+			patcherBuild.getPatcherBuildId(),
 			PatcherUtil.generatePatcherKey(
 				PatcherBuild.class.getName(), patcherBuild.getPatcherBuildId(),
 				dateFormat.format(new Date())));
 
-		patcherBuild = PatcherBuildLocalServiceUtil.updatePatcherBuild(
-			patcherBuild);
-
-		Http.Options options = new Http.Options();
-
-		Map<String, String> distJenkinsRequestParameters =
-			getDistJenkinsRequestParameters(patcherBuild);
-
-		for (Map.Entry<String, String> distJenkinsRequestParameter :
-				distJenkinsRequestParameters.entrySet()) {
-
-			options.addPart(
-				distJenkinsRequestParameter.getKey(),
-				distJenkinsRequestParameter.getValue());
-		}
-
-		sendJenkinsRequest(user, options);
+		sendJenkinsRequest(user, getDistJenkinsRequestParameters(patcherBuild));
 	}
 
-	public static void sendJenkinsRequest(User user, Http.Options options)
+	public static void sendJenkinsRequest(
+			User user, Map<String, String> parameters)
 		throws Exception {
 
 		PatcherConfiguration patcherConfiguration =
@@ -675,12 +647,22 @@ public class JenkinsUtil {
 			return;
 		}
 
+		Http.Options options = new Http.Options();
+
 		String credentials =
 			patcherConfiguration.jenkinsAdminUserName() + StringPool.COLON +
 				patcherConfiguration.jenkinsAdminUserToken();
 
 		options.addHeader(
 			"Authorization", "Basic " + Base64.encode(credentials.getBytes()));
+
+		for (Map.Entry<String, String> agentJenkinsRequestParameter :
+				parameters.entrySet()) {
+
+			options.addPart(
+				agentJenkinsRequestParameter.getKey(),
+				agentJenkinsRequestParameter.getValue());
+		}
 
 		options.addPart("patcher.user.id", String.valueOf(user.getUserId()));
 		options.addPart("token", patcherConfiguration.jenkinsToken());
@@ -712,28 +694,13 @@ public class JenkinsUtil {
 		DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyyMMddHHmmss");
 
-		patcherBuild.setRequestKey(
+		patcherBuild = PatcherBuildLocalServiceUtil.updateRequestKey(
+			patcherBuild.getPatcherBuildId(),
 			PatcherUtil.generatePatcherKey(
 				PatcherBuild.class.getName(), patcherBuild.getPatcherBuildId(),
 				dateFormat.format(new Date())));
 
-		patcherBuild = PatcherBuildLocalServiceUtil.updatePatcherBuild(
-			patcherBuild);
-
-		Http.Options options = new Http.Options();
-
-		Map<String, String> testJenkinsRequestParameters =
-			getTestJenkinsRequestParameters(patcherBuild);
-
-		for (Map.Entry<String, String> testJenkinsRequestParameter :
-				testJenkinsRequestParameters.entrySet()) {
-
-			options.addPart(
-				testJenkinsRequestParameter.getKey(),
-				testJenkinsRequestParameter.getValue());
-		}
-
-		sendJenkinsRequest(user, options);
+		sendJenkinsRequest(user, getTestJenkinsRequestParameters(patcherBuild));
 	}
 
 	public static JSONObject toJenkinsResult(String status, String statusURL) {
@@ -889,44 +856,22 @@ public class JenkinsUtil {
 			return;
 		}
 
-		Http.Options options = new Http.Options();
-
-		Map<String, String> agentJenkinsRequestParameters =
+		sendJenkinsRequest(
+			user,
 			getAgentJenkinsPatcherBuildRequestParameters(
-				patcherProjectVersion, patcherFix, patcherFixIds);
-
-		for (Map.Entry<String, String> agentJenkinsRequestParameter :
-				agentJenkinsRequestParameters.entrySet()) {
-
-			options.addPart(
-				agentJenkinsRequestParameter.getKey(),
-				agentJenkinsRequestParameter.getValue());
-		}
-
-		sendJenkinsRequest(user, options);
+				patcherProjectVersion, patcherFix, patcherFixIds));
 	}
 
 	protected static void sendAgentJenkinsPatcherFixRequest(
 			User user, PatcherFix patcherFix)
 		throws Exception {
 
-		Http.Options options = new Http.Options();
-
-		Map<String, String> agentJenkinsRequestParameters =
+		sendJenkinsRequest(
+			user,
 			getAgentJenkinsPatcherFixRequestParameters(
 				PatcherProjectVersionLocalServiceUtil.getPatcherProjectVersion(
 					patcherFix.getPatcherProjectVersionId()),
-				patcherFix);
-
-		for (Map.Entry<String, String> agentJenkinsRequestParameter :
-				agentJenkinsRequestParameters.entrySet()) {
-
-			options.addPart(
-				agentJenkinsRequestParameter.getKey(),
-				agentJenkinsRequestParameter.getValue());
-		}
-
-		sendJenkinsRequest(user, options);
+				patcherFix));
 	}
 
 	protected static void validateJenkinsRequestKey(

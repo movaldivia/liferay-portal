@@ -8,20 +8,14 @@ package com.liferay.site.cms.site.initializer.internal.display.context.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.fragment.renderer.FragmentRenderer;
 import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
-import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectFolderConstants;
-import com.liferay.object.model.ObjectDefinition;
-import com.liferay.object.model.ObjectFolder;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.Sync;
-import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
-import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -34,7 +28,6 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,7 +41,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 @RunWith(Arquillian.class)
 @Sync
 public class ViewContentsSectionDisplayContextTest
-	extends BaseDisplayContextTestCase {
+	extends BaseSectionDisplayContextTestCase {
 
 	@ClassRule
 	@Rule
@@ -57,95 +50,78 @@ public class ViewContentsSectionDisplayContextTest
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE);
 
-	@Ignore
-	@Test
-	@TestInfo("LPD-50664")
-	public void testGetCreationMenu() throws Exception {
-		Map<String, String> expectedResultMap = LinkedHashMapBuilder.put(
-			"folder", StringPool.BLANK
-		).put(
-			"Basic Web Content",
-			getHref(
-				objectDefinitionLocalService.
-					fetchObjectDefinitionByExternalReferenceCode(
-						"L_BASIC_WEB_CONTENT", TestPropsValues.getCompanyId()))
-		).build();
-
-		testGetCreationMenu(
-			ReflectionTestUtil.invoke(
-				_getViewContentsSectionDisplayContext(
-					getMockHttpServletRequest()),
-				"getCreationMenu", new Class<?>[0]),
-			expectedResultMap);
-
-		ObjectFolder objectFolder =
-			objectFolderLocalService.fetchObjectFolderByExternalReferenceCode(
-				ObjectFolderConstants.
-					EXTERNAL_REFERENCE_CODE_CONTENT_STRUCTURES,
-				TestPropsValues.getCompanyId());
-
-		ObjectDefinition objectDefinition = addCustomObjectDefinition(
-			objectFolder.getObjectFolderId(), true, true,
-			ObjectDefinitionConstants.SCOPE_SITE,
-			WorkflowConstants.STATUS_APPROVED);
-
-		expectedResultMap.put(
-			objectDefinition.getLabel(LocaleUtil.US),
-			getHref(objectDefinition));
-
-		addCustomObjectDefinition(
-			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
-			false, true, ObjectDefinitionConstants.SCOPE_SITE,
-			WorkflowConstants.STATUS_APPROVED);
-		addCustomObjectDefinition(
-			objectFolder.getObjectFolderId(), false, true,
-			ObjectDefinitionConstants.SCOPE_SITE,
-			WorkflowConstants.STATUS_APPROVED);
-		addCustomObjectDefinition(
-			objectFolder.getObjectFolderId(), true, false,
-			ObjectDefinitionConstants.SCOPE_SITE,
-			WorkflowConstants.STATUS_APPROVED);
-		addCustomObjectDefinition(
-			objectFolder.getObjectFolderId(), true, true,
-			ObjectDefinitionConstants.SCOPE_COMPANY,
-			WorkflowConstants.STATUS_APPROVED);
-		addCustomObjectDefinition(
-			objectFolder.getObjectFolderId(), true, true,
-			ObjectDefinitionConstants.SCOPE_SITE,
-			WorkflowConstants.STATUS_DRAFT);
-
-		testGetCreationMenu(
-			ReflectionTestUtil.invoke(
-				_getViewContentsSectionDisplayContext(
-					getMockHttpServletRequest()),
-				"getCreationMenu", new Class<?>[0]),
-			expectedResultMap);
-	}
-
 	@Test
 	public void testGetFDSActionDropdownItems() throws Exception {
 		List<FDSActionDropdownItem> fdsActionDropdownItems =
 			_getFDSActionDropdownItems();
 
 		Assert.assertEquals(
-			fdsActionDropdownItems.toString(), 5,
+			fdsActionDropdownItems.toString(), 7,
 			fdsActionDropdownItems.size());
 
 		_assertFDSActionDropdownItem(
 			fdsActionDropdownItems.get(0), "view", "actionLinkFolder",
 			"view-folder", "get", "item");
 		_assertFDSActionDropdownItem(
-			fdsActionDropdownItems.get(1), "pencil", "editFolder", "edit",
+			fdsActionDropdownItems.get(1), "info-circle-open", "show-details",
+			"show-details", null, "item");
+		_assertFDSActionDropdownItem(
+			fdsActionDropdownItems.get(2), "pencil", "editFolder", "edit",
 			"get", "item");
 		_assertFDSActionDropdownItem(
-			fdsActionDropdownItems.get(2), "pencil", "actionLink", "edit",
+			fdsActionDropdownItems.get(3), "pencil", "actionLink", "edit",
 			"get", "item");
 		_assertFDSActionDropdownItem(
-			fdsActionDropdownItems.get(3), "password-policies", "permissions",
+			fdsActionDropdownItems.get(4), null, "version-history",
+			"view-history", "get", "item");
+		_assertFDSActionDropdownItem(
+			fdsActionDropdownItems.get(5), "password-policies", "permissions",
 			"permissions", "get", "item");
 		_assertFDSActionDropdownItem(
-			fdsActionDropdownItems.get(4), "trash", "delete", "delete",
+			fdsActionDropdownItems.get(6), "trash", "delete", "delete",
 			"delete", "item");
+	}
+
+	@Override
+	protected Map<String, String> getExpectedCreationMenuItems()
+		throws PortalException {
+
+		return HashMapBuilder.put(
+			"Basic Web Content", getRedirect("L_BASIC_WEB_CONTENT")
+		).put(
+			"Blog", getRedirect("L_BLOG")
+		).put(
+			"folder", StringPool.BLANK
+		).put(
+			"Knowledge Base", getRedirect("L_KNOWLEDGE_BASE")
+		).build();
+	}
+
+	@Override
+	protected String getObjectFolderExternalReferenceCode() {
+		return ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENT_STRUCTURES;
+	}
+
+	@Override
+	protected String getRootObjectEntryFolderExternalReferenceCode() {
+		return ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS;
+	}
+
+	@Override
+	protected Object getSectionDisplayContext(
+			HttpServletRequest httpServletRequest)
+		throws Exception {
+
+		_fragmentRenderer.render(
+			null, httpServletRequest, new MockHttpServletResponse());
+
+		Object contentsSectionDisplayContext = httpServletRequest.getAttribute(
+			"com.liferay.site.cms.site.initializer.internal.display.context." +
+				"ViewContentsSectionDisplayContext");
+
+		Assert.assertNotNull(contentsSectionDisplayContext);
+
+		return contentsSectionDisplayContext;
 	}
 
 	private void _assertFDSActionDropdownItem(
@@ -169,24 +145,8 @@ public class ViewContentsSectionDisplayContextTest
 		throws Exception {
 
 		return ReflectionTestUtil.invoke(
-			_getViewContentsSectionDisplayContext(getMockHttpServletRequest()),
+			getSectionDisplayContext(getMockHttpServletRequest()),
 			"getFDSActionDropdownItems", new Class<?>[0]);
-	}
-
-	private Object _getViewContentsSectionDisplayContext(
-			HttpServletRequest httpServletRequest)
-		throws Exception {
-
-		_fragmentRenderer.render(
-			null, httpServletRequest, new MockHttpServletResponse());
-
-		Object contentsSectionDisplayContext = httpServletRequest.getAttribute(
-			"com.liferay.site.cms.site.initializer.internal.display.context." +
-				"ViewContentsSectionDisplayContext");
-
-		Assert.assertNotNull(contentsSectionDisplayContext);
-
-		return contentsSectionDisplayContext;
 	}
 
 	@Inject(

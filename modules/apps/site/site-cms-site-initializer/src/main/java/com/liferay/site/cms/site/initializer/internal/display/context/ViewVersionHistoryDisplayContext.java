@@ -11,14 +11,15 @@ import com.liferay.object.model.ObjectEntry;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,10 +29,11 @@ import java.util.Map;
 public class ViewVersionHistoryDisplayContext {
 
 	public ViewVersionHistoryDisplayContext(
-		HttpServletRequest httpServletRequest,
+		HttpServletRequest httpServletRequest, Language language,
 		ObjectDefinition objectDefinition, ObjectEntry objectEntry) {
 
 		_httpServletRequest = httpServletRequest;
+		_language = language;
 		_objectDefinition = objectDefinition;
 		_objectEntry = objectEntry;
 
@@ -51,20 +53,43 @@ public class ViewVersionHistoryDisplayContext {
 		return sb.toString();
 	}
 
-	public Map<String, Object> getBackButtonReactData() throws PortalException {
+	public List<FDSActionDropdownItem> getFDSActionDropdownItems() {
+		return ListUtil.fromArray(
+			new FDSActionDropdownItem(
+				"{file.link.href}", "download", "download",
+				_language.get(_httpServletRequest, "download"), "get", null,
+				"link"),
+			new FDSActionDropdownItem(
+				"{actions.restore.href}", "restore", "restore",
+				_language.get(_httpServletRequest, "restore"), "put", "restore",
+				"headless"),
+			new FDSActionDropdownItem(
+				"{actions.expire.href}", "time", "expire",
+				_language.get(_httpServletRequest, "expire"), "post", "expire",
+				"headless"),
+			new FDSActionDropdownItem(
+				"{actions.copy.href}", "copy", "copy",
+				_language.get(_httpServletRequest, "make-a-copy"), "post",
+				"copy", "headless"),
+			new FDSActionDropdownItem(
+				_language.get(
+					_httpServletRequest,
+					"are-you-sure-you-want-to-delete-this-entry"),
+				"{actions.delete.href}", "trash", "delete",
+				_language.get(_httpServletRequest, "delete"), "delete",
+				"delete", "headless"));
+	}
+
+	public Map<String, Object> getToolbarReactData() throws PortalException {
 		return HashMapBuilder.<String, Object>put(
 			"backURL", ParamUtil.getString(_httpServletRequest, "backURL")
 		).put(
-			"headerTitle",
-			_objectEntry.getTitleValue(_themeDisplay.getLanguageId())
+			"title", _objectEntry.getTitleValue(_themeDisplay.getLanguageId())
 		).build();
 	}
 
-	public List<FDSActionDropdownItem> getFDSActionDropdownItems() {
-		return Collections.emptyList();
-	}
-
 	private final HttpServletRequest _httpServletRequest;
+	private final Language _language;
 	private final ObjectDefinition _objectDefinition;
 	private final ObjectEntry _objectEntry;
 	private final ThemeDisplay _themeDisplay;

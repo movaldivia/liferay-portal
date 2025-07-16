@@ -16,7 +16,6 @@ import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
@@ -114,6 +113,16 @@ public class PatcherProjectVersionsDisplayContext {
 		return _patcherProjectVersion;
 	}
 
+	public String getRedirect() {
+		if (_redirect != null) {
+			return _redirect;
+		}
+
+		_redirect = ParamUtil.getString(_httpServletRequest, "redirect");
+
+		return _redirect;
+	}
+
 	public SearchContainer<PatcherProjectVersion> getSearchContainer()
 		throws Exception {
 
@@ -136,8 +145,7 @@ public class PatcherProjectVersionsDisplayContext {
 			"patcherProductVersionId", getPatcherProductVersionId());
 		searchContext.setEnd(patcherProjectVersionSearchContainer.getEnd());
 		searchContext.setGroupIds(null);
-		searchContext.setSorts(
-			new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, true));
+		searchContext.setSorts(new Sort("name_sortable", false));
 		searchContext.setStart(patcherProjectVersionSearchContainer.getStart());
 
 		Hits hits = indexer.search(searchContext);
@@ -215,6 +223,7 @@ public class PatcherProjectVersionsDisplayContext {
 	private SearchContainer<PatcherProjectVersion>
 		_patcherProjectVersionSearchContainer;
 	private PortletURL _portletURL;
+	private String _redirect;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 

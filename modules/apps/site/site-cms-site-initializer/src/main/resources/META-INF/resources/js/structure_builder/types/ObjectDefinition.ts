@@ -53,3 +53,8 @@ export type ObjectDefinition = {
 		code: number;
 	};
 };
+
+export type ObjectDefinitions = Record<
+	ObjectDefinition['externalReferenceCode'],
+	ObjectDefinition
+>;

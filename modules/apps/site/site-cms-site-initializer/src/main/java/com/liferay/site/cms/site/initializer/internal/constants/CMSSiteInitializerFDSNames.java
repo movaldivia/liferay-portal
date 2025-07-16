@@ -36,20 +36,29 @@ public class CMSSiteInitializerFDSNames {
 	public static final String FILES_SECTION =
 		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME + "-filesSection";
 
-	public static final String SPACE_CONTENTS_ABSTRACT_SECTION =
+	public static final String SPACE_CONTENTS_SUMMARY_SECTION =
 		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME +
-			"-spaceContentsAbstractSection";
+			"-spaceContentsSummarySection";
 
-	public static final String SPACE_CONTENTS_SECTION =
+	public static final String SPACE_FILES_SUMMARY_SECTION =
 		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME +
-			"-spaceContentsSection";
+			"-spaceFilesSummarySection";
 
-	public static final String SPACE_FILES_ABSTRACT_SECTION =
+	public static final String SPACE_MEMBERS_SUMMARY_SECTION =
 		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME +
-			"-spaceFilesAbstractSection";
+			"-spaceMembersSummarySection";
 
-	public static final String SPACE_FILES_SECTION =
-		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME + "-spaceFilesSection";
+	public static final String SPACE_MEMBERS_USER_GROUPS_SUMMARY_SECTION =
+		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME +
+			"-spaceMembersUserGroupsSummarySection";
+
+	public static final String SPACE_MEMBERS_USERS_SUMMARY_SECTION =
+		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME +
+			"-spaceMembersUsersSummarySection";
+
+	public static final String SPACE_SITES_SUMMARY_SECTION =
+		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME +
+			"-spaceSitesSummarySection";
 
 	public static final String STRUCTURE_USAGES =
 		CMSSiteInitializerConstants.BUNDLE_SYMBOLIC_NAME + "-structureUsages";

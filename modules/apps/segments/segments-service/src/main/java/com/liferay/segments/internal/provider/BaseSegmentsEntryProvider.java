@@ -227,11 +227,14 @@ public abstract class BaseSegmentsEntryProvider
 
 		String contextFilterString = getFilterString(
 			segmentsEntry, Criteria.Type.CONTEXT);
+		String modelFilterString = getFilterString(
+			segmentsEntry, Criteria.Type.MODEL);
 
 		if (ArrayUtil.contains(
 				(long[])userAttributes.get("segmentsEntryIds"),
 				segmentsEntry.getSegmentsEntryId()) &&
-			Validator.isNull(contextFilterString)) {
+			Validator.isNull(contextFilterString) &&
+			Validator.isNull(modelFilterString)) {
 
 			return true;
 		}
@@ -244,8 +247,6 @@ public abstract class BaseSegmentsEntryProvider
 
 		Criteria.Conjunction contextConjunction = getConjunction(
 			segmentsEntry, Criteria.Type.CONTEXT);
-		String modelFilterString = getFilterString(
-			segmentsEntry, Criteria.Type.MODEL);
 
 		if (context != null) {
 			boolean guestUser = !GetterUtil.getBoolean(
@@ -389,12 +390,15 @@ public abstract class BaseSegmentsEntryProvider
 					expandoTable.getTableId(), expandoColumn.getColumnId(),
 					user.getUserId());
 
+				String expandoColumnName = expandoColumn.getName();
+
 				String key = StringBundler.concat(
 					"customField/_", expandoColumn.getColumnId(),
 					StringPool.UNDERLINE,
 					StringUtil.replace(
-						expandoColumn.getName(), CharPool.SPACE,
-						CharPool.UNDERLINE));
+						expandoColumnName.replaceAll(
+							":|;|'|\"", StringPool.BLANK),
+						CharPool.SPACE, CharPool.UNDERLINE));
 
 				if (expandoValue != null) {
 					expandoValues.put(key, expandoValue.getData());

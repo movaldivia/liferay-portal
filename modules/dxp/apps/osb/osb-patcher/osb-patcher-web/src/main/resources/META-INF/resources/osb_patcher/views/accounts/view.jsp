@@ -13,12 +13,6 @@ PatcherAccountsViewDisplayContext patcherAccountsViewDisplayContext = new Patche
 long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersionId");
 %>
 
-<c:if test="<%= !windowState.equals(LiferayWindowState.POP_UP) %>">
-	<liferay-util:include page="/osb_patcher/views/toolbar.jsp" servletContext="<%= application %>">
-		<liferay-util:param name="tabs1" value="accounts" />
-	</liferay-util:include>
-</c:if>
-
 <portlet:renderURL var="viewPatcherAccountURL">
 	<portlet:param name="mvcRenderCommandName" value="/patcher/view_accounts" />
 	<portlet:param name="patcherBuildAccountEntryCode" value="<%= patcherAccountsViewDisplayContext.getPatcherBuildAccountEntryCode() %>" />
@@ -49,7 +43,7 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 
 <aui:button-row>
 	<portlet:renderURL var="createPatcherBuildURL">
-		<portlet:param name="mvcRenderCommandName" value="/patcher/create_builds" />
+		<portlet:param name="mvcRenderCommandName" value="/patcher/add_builds" />
 		<portlet:param name="patcherProductVersionId" value="<%= String.valueOf(patcherProductVersionId) %>" />
 		<portlet:param name="redirect" value="<%= viewPatcherAccountURL %>" />
 	</portlet:renderURL>
@@ -226,8 +220,8 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 			name="content"
 		>
 			<portlet:renderURL var="viewPatcherBuildContentURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
-				<portlet:param name="mvcRenderCommandName" value="/patcher/view_content_builds" />
-				<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+				<portlet:param name="mvcRenderCommandName" value="/patcher/view_project_versions_fixed_issues" />
+				<portlet:param name="patcherProjectVersionId" value="<%= String.valueOf(patcherBuild.getPatcherProjectVersionId()) %>" />
 			</portlet:renderURL>
 
 			<clay:button
@@ -254,8 +248,8 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 				<clay:link
 					cssClass="nobr"
 					href='<%= jenkinsResult.get("statusURL") %>'
+					label='<%= jenkinsResult.get("jobName") %>'
 					target="_blank"
-					title='<%= jenkinsResult.get("jobName") %>'
 				/>
 
 			<%
@@ -351,7 +345,7 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 
 				<c:if test="<%= PatcherPermission.contains(permissionChecker, patcherBuild, PatcherActionKeys.EDIT, patcherBuild.getUserId()) && PatcherBuildUtil.isLatestPatcherBuild(patcherBuild) && (patcherBuild.getType() != PatcherBuildConstants.TYPE_FIX_PACK) %>">
 					<portlet:renderURL var="createPatcherBuildTemplateURL">
-						<portlet:param name="mvcRenderCommandName" value="/patcher/create_builds" />
+						<portlet:param name="mvcRenderCommandName" value="/patcher/add_builds" />
 						<portlet:param name="templatePatcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
 						<portlet:param name="redirect" value="<%= viewPatcherAccountURL %>" />
 					</portlet:renderURL>
@@ -399,6 +393,7 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 				<c:if test="<%= patcherBuild.getStatus() == WorkflowConstants.STATUS_BUILD_COMPLETE %>">
 					<portlet:actionURL name="/patcher/test_builds" var="testPatcherBuildURL">
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_STARTED) %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 
@@ -409,8 +404,9 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 						url="<%= testPatcherBuildURL %>"
 					/>
 
-					<portlet:actionURL name="/patcher/smoke_test_builds" var="smokeTestPatcherBuildURL">
+					<portlet:actionURL name="/patcher/test_builds" var="smokeTestPatcherBuildURL">
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_QA_AUTOMATION_STARTED_SMOKE_ONLY) %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 
@@ -432,8 +428,9 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 					}
 					%>
 
-					<portlet:actionURL name="/patcher/ready_for_release_builds" var="releasePatcherBuildURL">
+					<portlet:actionURL name="/patcher/release_builds" var="releasePatcherBuildURL">
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_READY_TO_RELEASE) %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 
@@ -456,8 +453,9 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 					}
 					%>
 
-					<portlet:actionURL name="/patcher/release_manually_builds" var="releasePatcherBuildURL">
+					<portlet:actionURL name="/patcher/release_builds" var="releasePatcherBuildURL">
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_RELEASED) %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 
@@ -469,8 +467,10 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 						url="javascript:void(0);"
 					/>
 
-					<portlet:actionURL name="/patcher/release_to_help_center_builds" var="releasePatcherBuildURL">
+					<portlet:actionURL name="/patcher/release_builds" var="releasePatcherBuildURL">
 						<portlet:param name="patcherBuildId" value="<%= String.valueOf(patcherBuild.getPatcherBuildId()) %>" />
+						<portlet:param name="status" value="<%= String.valueOf(WorkflowConstants.STATUS_BUILD_RELEASED) %>" />
+						<portlet:param name="releaseToHelpCenter" value="<%= Boolean.TRUE.toString() %>" />
 						<portlet:param name="redirect" value="<%= currentURL %>" />
 					</portlet:actionURL>
 

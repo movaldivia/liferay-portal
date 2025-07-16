@@ -12,8 +12,19 @@ import org.json.JSONObject;
  */
 public class JSONObjectTopLevelBuildReport extends BaseTopLevelBuildReport {
 
-	protected JSONObjectTopLevelBuildReport(JSONObject buildReportJSONObject) {
-		super(buildReportJSONObject);
+	@Override
+	public JSONObject getBuildReportJSONObject() {
+		return _buildReportJSONObject;
 	}
+
+	protected JSONObjectTopLevelBuildReport(JSONObject buildReportJSONObject) {
+		super(buildReportJSONObject.getString("buildURL"));
+
+		_buildReportJSONObject = buildReportJSONObject;
+
+		initialize(_buildReportJSONObject);
+	}
+
+	private final JSONObject _buildReportJSONObject;
 
 }

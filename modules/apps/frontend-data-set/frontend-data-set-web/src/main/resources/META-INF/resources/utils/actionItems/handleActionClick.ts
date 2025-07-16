@@ -8,7 +8,7 @@ import {navigate} from 'frontend-js-web';
 
 import {openPermissionsModal} from '../modals/openPermissionsModal';
 import {resolveModalSize} from '../modals/resolveModalSize';
-import {IItemsActions} from '../types';
+import {ESelectionTrigger, IItemsActions} from '../types';
 import {ACTION_ITEM_TARGETS} from './constants';
 import formatActionURL from './formatActionURL';
 
@@ -20,11 +20,13 @@ const handleActionClick = ({
 	event,
 	executeAsyncItemAction,
 	highlightItems,
+	infoPanelOpen,
 	itemData,
 	itemId,
 	loadData,
 	onActionDropdownItemClick,
 	onInfoPanelToggleButtonClick,
+	onItemSelectionChange,
 	openModal,
 	openSidePanel,
 	setLoading,
@@ -35,11 +37,13 @@ const handleActionClick = ({
 	event: Event;
 	executeAsyncItemAction: Function;
 	highlightItems: Function;
+	infoPanelOpen?: boolean;
 	itemData: any;
 	itemId: string | number;
 	loadData: Function;
 	onActionDropdownItemClick: Function;
 	onInfoPanelToggleButtonClick?: Function;
+	onItemSelectionChange?: Function;
 	openModal: Function;
 	openSidePanel: Function;
 	setLoading?: Function;
@@ -62,7 +66,12 @@ const handleActionClick = ({
 
 	const doAction = ({defaultPrevented}: {defaultPrevented: boolean}) => {
 		if (target === INFO_PANEL && onInfoPanelToggleButtonClick) {
-			onInfoPanelToggleButtonClick();
+			onItemSelectionChange?.({
+				item: itemData,
+				trigger: ESelectionTrigger.CONTAINER,
+			});
+
+			!infoPanelOpen && onInfoPanelToggleButtonClick();
 		}
 		else if (target?.includes('modal')) {
 			event.preventDefault();

@@ -13,13 +13,6 @@ String redirect = ParamUtil.getString(request, "redirect");
 long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersionId");
 %>
 
-<c:if test="<%= !windowState.equals(LiferayWindowState.POP_UP) %>">
-	<liferay-util:include page="/osb_patcher/views/toolbar.jsp" servletContext="<%= application %>">
-		<liferay-util:param name="tabs1" value="fixes" />
-		<liferay-util:param name="patcherProductVersionId" value="<%= String.valueOf(patcherProductVersionId) %>" />
-	</liferay-util:include>
-</c:if>
-
 <liferay-util:include page="/osb_patcher/views/header.jsp" servletContext="<%= application %>">
 	<liferay-util:param name="title" value="create-fix" />
 	<liferay-util:param name="mvcRenderCommandName" value="/patcher/index_fixes" />
@@ -69,12 +62,6 @@ long patcherProductVersionId = ParamUtil.getLong(request, "patcherProductVersion
 	</aui:button-row>
 </aui:form>
 
-<%
-Map<Long, List<PatcherProjectVersion>> patcherProjectVersions = PatcherProjectVersionUtil.getPatcherProductVersionIdPatcherProjectVersions();
-
-JSONObject patcherProjectVersionsJSONObject = JSONFactoryUtil.createJSONObject(JSONFactoryUtil.looseSerializeDeep(patcherProjectVersions));
-%>
-
 <aui:script>
 	var select = document.getElementById(
 		'<portlet:namespace />patcherProjectVersionId'
@@ -87,7 +74,7 @@ JSONObject patcherProjectVersionsJSONObject = JSONFactoryUtil.createJSONObject(J
 			Liferay.Patcher.populateProjectVersionField(
 				productVersionId,
 				select,
-				<%= patcherProjectVersionsJSONObject %>
+				<%= PatcherProjectVersionUtil.getPatcherProjectVersionsJSONObject() %>
 			);
 		},
 		['aui-base']
@@ -103,7 +90,7 @@ JSONObject patcherProjectVersionsJSONObject = JSONFactoryUtil.createJSONObject(J
 		Liferay.Patcher.populateProjectVersionField(
 			productVersionId,
 			select,
-			<%= patcherProjectVersionsJSONObject %>
+			<%= PatcherProjectVersionUtil.getPatcherProjectVersionsJSONObject() %>
 		);
 	});
 
